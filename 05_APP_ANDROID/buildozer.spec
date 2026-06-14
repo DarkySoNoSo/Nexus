@@ -4,7 +4,7 @@
 title = Nexus Daemon
 
 # (str) Application version required by Buildozer
-version = 1.5.3
+version = 1.5.4
 
 # (str) Package name
 package.name = nexus_daemon
@@ -26,7 +26,7 @@ requirements = python3, kivy, requests, charset-normalizer, idna, urllib3
 orientation = portrait
 
 # (bool) Use fullscreen or not
-fullscreen = 0
+fullscreen = 1
 
 # (list) Permissions required for the application
 # Standard Nexus Permissions (Ingestion over Network, secure local storage, and log camera)
