@@ -3,6 +3,9 @@
 # (str) Title of your application
 title = Nexus Daemon
 
+# (str) Application version required by Buildozer
+version = 1.5.3
+
 # (str) Package name
 package.name = nexus_daemon
 
