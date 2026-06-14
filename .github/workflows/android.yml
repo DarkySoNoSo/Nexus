@@ -117,7 +117,11 @@ jobs:
         run: |
           set -euxo pipefail
           cd 05_APP_ANDROID
+          set +o pipefail
           yes | buildozer android debug
+          buildozer_status=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$buildozer_status" -eq 0
           test -d bin
           ls -lah bin
           test -n "$(find bin -maxdepth 1 -name '*.apk' -type f -print -quit)"
