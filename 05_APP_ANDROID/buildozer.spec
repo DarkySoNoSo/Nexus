@@ -38,8 +38,8 @@ android.api = 33
 # (int) Minimum API required (Android 8.0+)
 android.minapi = 26
 
-# (str) Android NDK directory (leave empty to automated download)
-android.ndk_api = 21
+# (int) Android NDK API level. Keep this aligned with android.minapi for python-for-android packaging.
+android.ndk_api = 26
 
 # (bool) Use private storage for sqlite files (True prevents permission issues)
 android.private_storage = True
