@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     name: Build Android APK
@@ -15,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Get Date
         id: get-date
@@ -35,39 +38,39 @@ jobs:
           find 05_APP_ANDROID -maxdepth 2 -type f | sort
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
 
       - name: Cache Buildozer Global Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.buildozer
-          key: ${{ runner.os }}-buildozer-global-${{ hashFiles('05_APP_ANDROID/buildozer.spec') }}-${{ steps.get-date.outputs.date }}-v4
+          key: ${{ runner.os }}-buildozer-global-${{ hashFiles('05_APP_ANDROID/buildozer.spec') }}-${{ steps.get-date.outputs.date }}-v5
           restore-keys: |
             ${{ runner.os }}-buildozer-global-${{ hashFiles('05_APP_ANDROID/buildozer.spec') }}-
 
       - name: Cache Buildozer Project Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: 05_APP_ANDROID/.buildozer
-          key: ${{ runner.os }}-buildozer-local-${{ hashFiles('05_APP_ANDROID/buildozer.spec') }}-v4
+          key: ${{ runner.os }}-buildozer-local-${{ hashFiles('05_APP_ANDROID/buildozer.spec') }}-v5
           restore-keys: |
             ${{ runner.os }}-buildozer-local-${{ hashFiles('05_APP_ANDROID/buildozer.spec') }}-
 
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle
             05_APP_ANDROID/.gradle
-          key: ${{ runner.os }}-gradle-${{ hashFiles('05_APP_ANDROID/buildozer.spec') }}-v4
+          key: ${{ runner.os }}-gradle-${{ hashFiles('05_APP_ANDROID/buildozer.spec') }}-v5
           restore-keys: |
             ${{ runner.os }}-gradle-
 
@@ -129,7 +132,7 @@ jobs:
           BUILDOZER_WARN_ON_ROOT: 0
 
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Nexus-Daemon-APK
           path: 05_APP_ANDROID/bin/*.apk
@@ -137,7 +140,7 @@ jobs:
 
       - name: Upload Build Diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Nexus-Build-Diagnostics
           path: |
