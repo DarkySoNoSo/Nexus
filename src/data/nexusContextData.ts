@@ -96,17 +96,19 @@ Das gesamte Nexus-System basiert auf dem Prinzip 'Local First / Offline Authoriz
         name: "NEXUS_ARCHITEKTUR.md",
         path: "01_ARCHITEKTUR/NEXUS_ARCHITEKTUR.md",
         fileType: "markdown",
-        sizeBytes: 1250,
-        lastModified: "2026-06-07T11:00:00Z",
-        content: `# NEXUS-Systemarchitektur - Technische Struktur
+        sizeBytes: 1540,
+        lastModified: "2026-06-14T11:00:00Z",
+        content: `# NEXUS-Systemarchitektur - APK-Centric Technische Struktur v40.44
 
-## 1. Single-Source-of-Truth Prinzip
-* Alle Zustände, indexierte Dateien, E-Mails und Verlaufs-Metadaten liegen exklusiv in der SQLite Master-Verzeichnisdatei 'C:\\MasterIndex_Storage\\_NEXUS_SYSTEM\\db\\nexus_catalog.sqlite'.
-* Die Clients (Web App, Android Daemon, Widgets) kommunizieren ausschließlich über signierte REST-Endpunkte an Port 8081.
+## 1. Das APK-Master Prinzip
+* Das Gesamtecosystem NEXUS wurde vollständig auf die mobile Android-App (APK) als alleinigem MASTER ausgerichtet.
+* Alle früheren Webversionen und dezentralen Admin-Terminals wurden auf die APK gerichtet, welche als primäres Leitsystem und Datenbank-Registrar läuft.
+* Die Ingestions-Queue des Android-Daemons kontrolliert den Ingress, validiert HMAC-SHA256 Signaturen und synchronisiert asynchron mit dem Windows-Host-Katalog.
+* Latenzfreie Offline-Katalogisierung per SQLite unter 'nexus_offline.db' sichert absolute Datenintegrität.
 
-## 2. Client-Profile & Rollen
-- **Web App Cockpit:** Bietet Patrick ein visuelles Triage-Portal, SQLite-Katalogabfragetool, Auslastungsmetriken und den Dialog-Chef.
-- **Android App & Widget:** Lokaler Kivy-Dienst zur Erfassung mobiler Fotos (Zählerstände, Belege) und SMS-Zahlungsbestätigungen mit transaktionssicherer Offline-Speicherung (Errno 13/14-geschützt).`
+## 2. Client-Profile & Hierarchie
+- **Android APK (Daemon & Widget):** Der absolute SYSTEM-MASTER. Verwaltet den primären Offline-Verbindungsstatus, puffert Belege in 'nexus_offline.db' und steuert die transaktionssichere Synchronisation per HMAC-Key-Handshake.
+- **Web App Cockpit (Satellit):** Dient Patrick als ergonomische Remote-Console für visuelle Triagen, Auslastungsberichte, SQLite-Reconciliations und den Dialog-Chef "Nexi". Das Cockpit dockt direkt an den vom APK-Master verwalteten Datenstrom an.`
       },
       {
         name: "NEXUS_GESAMTDOKUMENTATION_STAND_20260607.md",
@@ -125,6 +127,86 @@ Der 'Index-Chef' nutzt primär ein offline-sicheres Heuristikmodell für die Vor
 Optional wird eine Zweitmeinung über die Gemini-API eingeholt, um unklare Belege, formlose Rechnungsfotos und komplexe E-Mails semantisch einzuordnen.
 
 * **Schnittstellen-Vertrag:** Keine unautorisierten API-Schreibversuche auf externe Datenbanken. API-Kosten-Loch blockiert alle Anfragen, falls Monatsbudget von 15.00 USD überschritten wird.`
+      },
+      {
+        name: "CHEF_ARCHITEKT_BLUEPRINT.md",
+        path: "01_ARCHITEKTUR/CHEF_ARCHITEKT_BLUEPRINT.md",
+        fileType: "markdown",
+        sizeBytes: 4250,
+        lastModified: "2026-06-14T10:30:00Z",
+        content: `# BLUEPRINT: Chef-Architekt & System-Orchestrator v40.44
+
+Dieses Dokument definiert das logische Blueprint-Modell für Patricks dezentralisiertes, hochkompatibles System-Ökosystem nexus, basierend auf dem Vier-Ebenen-System-Matrix-Modell und den Prinzipien der Top-Down-Dekonstruktion.
+
+---
+
+## Ebene 1: Fundament & Infrastruktur (Datenarchitektur & Zero-Trust)
+
+### 1. Ressourcen-Allokation & Host-Technologie
+* **Host-Plattform:** Lokales Windows Core-System mit PowerShell-gesteuertem Daemon und virtualisiertem SQLite-Dienst für latenzfreien Offline-Zugriff.
+* **CPU-/RAM-Governance:** Striktes Limit-Mapping auf dem Host-System zur Verhinderung von Speicherlecks durch Hintergrundprozesse der Dateiüberwachung.
+* **Lokaler persistenten Speicher:** Physisches Speicherverzeichnis unter \`C:\\MasterIndex_Storage\` mit hierarchisch dekonstruierten Unterstrukturen für Belege, Finanzen, Kommunikation und Dokumente.
+
+### 2. Datenarchitektur & Datenbank-Struktur (SSOT)
+* **Datenbank:** Eine einzige SQLite-Masterdatenbank als Single-Source-of-Truth (\`nexus_catalog.sqlite\`). Keine Redundanzen oder dezentralen Parallel-Register (DRY-Prinzip).
+* **Normalisiertes Schema:** Tabellarische Trennung von Datei-Metadaten, Systementscheidungen des Index-Chefs, synchronisierten Mobilgeräte-Ingestionen und Budget-Verläufen.
+* **Integrität & Beziehungen:** Strikter relationaler Fremdschlüssel-Bezug zur Zuordnung von eingehenden Transaktionen (z.B. SMS) und physischen Beleg-Dateien (z.B. PDF-Rechnungen) in der Zeitleiste.
+
+### 3. Dezentrales Zero-Trust Sicherheitsmodell
+* **HMAC-Authentifizierung:** Signaturpflicht für alle eingehenden API-Aufrufe mobiler Clients (Android Daemon) zur Verhinderung von Man-in-the-Middle-Angriffen im lokalen Netzwerk (LAN/Tailscale).
+* **Token-Validierung:** Rotierende Tokens zur Sitzungs-Absicherung, verschlüsselt hinterlegt in den lokalen Systemkonfigurationsdateien.
+* **Hardware-Kopplung:** Nur registrierte Host-Identitäten und autorisierte SIM-Enderäte können Datensätze in die Triage-Zentralen einspeisen.
+
+---
+
+## Ebene 2: Kern-Logik & Verarbeitung (Daten-Pipelines & API-Verträge)
+
+### 1. Daten-Pipeline & Ingestions-Ablauf
+* **Eingangs-Watcher:** Ein ereignisgesteuerter Hintergrunddienst überwacht Änderungen und Neuzugänge im Verzeichnis \`C:\\MasterIndex_Storage\`.
+* **Semantische Filterung:** Jede Datei wird sequenziell triagiert: Typ-Erkennung, Namens-Dekonstruktion, Inhalts-Hashing und Metadaten-Extraktion vor jeder Server-Verbindung.
+* **Transaktionssicherheit:** Sämtliche SQLite-Schreibvorgänge nutzen ein Transaktionsmodell mit sofortiger Freigabe der Datenbanksperre (Try-Finally-Close), um Datenkorruption bei gleichzeitigem Zugriff zu verhindern.
+
+### 2. API-Verträge & Interoperabilität
+* **Format-Standardisierung:** Austauschstruktur via validiertem JSON. REST-Schnittstellen mit eindeutigen Fehlercodes für Timeout, Authentifizierungsfehler und Speicher-Engpässe.
+* **BOM-Sicherheit (UTF-8-sig):** Alle PowerShell-generierten Ausgaben erzwingen die Byte-Order-Markierung, um plattformübergreifend fehlerfreie String-Interpretationen zwischen Windows, Linux-Containern und Android-Geräten zu garantieren.
+* **Plattformunabhängige Pfade:** Normalisierung aller logischen Pfade zu einheitlichen relativen Bezeichnern, um Abweichungen zwischen Windows-Backslashes und POSIX-Forward-Slashes zu eliminieren.
+
+### 3. Ausfallsicherheit & Telemetrie (Resilienz)
+* **Kosten-Lockdown:** Automatischer Wechsel in den lokalen Heuristikmodus (Offline-Triage) bei Erreichen des definierten Budgetlimits für Cloud-KI-Leistungen (15,00 USD / Monat).
+* **Verlauf-Caching:** Android-seitiger lokaler Puffer mit exponentiellem Backoff-Algorithmus zur Pufferung von Ingestionen bei instabiler Netzwerkverbindung zum Master-System.
+* **Silent Errors Warning:** Fehlermeldungen verbleiben in der lokalen Diagnosekonsole und stören weder die Integrität der Benutzeroberfläche noch das Workflowtempo des Anwenders.
+
+---
+
+## Ebene 3: Interaktions-Schicht (Zustandssteuerung & UX-Interface)
+
+### 1. State-Management & Synchronisation
+* **Lokaler Offline-Zustand:** Clients verwalten den Synchronisationsstatus (Synchronisiert, Ausstehend, Gesperrt) unabhängig und führen beim Wiederverbinden eine Delta-Reconciliation durch.
+* **Status-Ausschlüsse:** UI-Zustände der Applets und Dashboards werden rein lokal gehalten; der SQLite-Kern wird niemals mit temporärem Benutzeroberflächen-Zustand belastet.
+
+### 2. Triage & User-Flows
+* **Gegenüberstellung:** Verdächtige Dateninkonsistenzen (z.B. ein Eintrag in der Inbox ohne physisches PDF-Dokument) werden dem Anwender in einer visuellen Gegenüberstellung zur schnellen Triage angeboten.
+* **Eintasten-Korrektur:** Fehlerhafte Einträge können mit einer einzigen intuitiven Freigabe-Aktion im Interface repariert werden (z.B. Quelle korrigieren, Pfad anpassen).
+
+### 3. Ereignisgesteuerte Benutzeroberfläche
+* **Omnichannel-Kohärenz:** Die Interaktion erfolgt asynchron und reagiert unverzüglich auf neue Hintergrunddaten ohne störendes Neuladen der Seite.
+* **Konversationsschnittstelle (Conversational UI):** Ein intelligenter Dialog-Chef ("Nexi") erlaubt die Steuerung und Statusabfrage des Gesamtsystems durch intuitive, natürliche Spracheingabe.
+
+---
+
+## Ebene 4: Deployment & Wartung (CI/CD, Skalierung & Selbstheilung)
+
+### 1. Qualitätskontrolle & Validierung
+* **Statische Typ-Prüfung:** Durchgängige TypeScript-Sicherheit und TypeScript-Linter-Erzwingung vor jedem Build zur Gewährleistung stabiler Datenübergaben.
+* **DRAFT-Verfahren:** Jede strukturelle Regeländerung wird zunächst als Entwurf (DRAFT) in den \`NEXUS_CHANGE_DRAFT_LEDGER.md\` Ledger geschrieben, bevor eine Systemaktualisierung freigegeben wird.
+
+### 2. Skalierungsstrategien (Datenvolumen-Management)
+* **Kompaktierungs-Richtlinien:** Automatische Archivierung historischer Einträge im SQLite-Katalog, die älter als vordefinierte Zeiträume sind, um die Abfragegeschwindigkeit stabil zu halten.
+* **Vektorisierungs-Limits:** Deckelung der maximalen Zeichenanzahl bei der Kontext-Extraktion zur Schonung der Systemressourcen und zur Vermeidung von Context-Spillover.
+
+### 3. Selbstheilungs-Mecharismen
+* **Lock-Freigabe:** Automatisierte Routinen zur Identifizierung und Beendigung blockierter Dateihandles bei verwaisten Ingestions-Vorgängen.
+* **Automatische Wiederherstellung:** Periodischer Abgleich der lokalen Backup-Verzeichnisse auf Google Drive (\`G:\\\`) mit dem lokalen Stand von \`C:\\MasterIndex_Storage\`.`
       }
     ]
   },
@@ -155,16 +237,73 @@ Dieser Leitfaden definiert, wie Nexus eingehende Nachrichten strukturieren und b
         name: "INDEX_CHEF_LOGIK.md",
         path: "02_INDEX_CHEF/INDEX_CHEF_LOGIK.md",
         fileType: "markdown",
-        sizeBytes: 1320,
-        lastModified: "2026-06-07T14:30:00Z",
-        content: `# INDEX_CHEF_LOGIK - Entscheidungsverfahren des Chefs
+        sizeBytes: 3950,
+        lastModified: "2026-06-14T10:31:00Z",
+        content: `# Index-Chef Logik & Orchestrationsrichtlinien
 
-## 1. Priorisierung und Triage
-Der Index-Chef ordnet eingehende Events, Fotos und Benachrichtigungen umgehend nach ihrer Dringlichkeit und Relevanz ein. Echte Auszahlungsbelege oder kritische Fehlermeldungen erhalten höchste Priorität.
+## 1. Core-Auftrag
+Der Index-Chef ist weit mehr als ein Chatbot. Er agiert als intelligenter Orchestrator, Kontextverwalter, Plausibilitätsprüfer und kontinuierliches Lernsystem für Patricks lokalen Master-Katalog (\`nexus_catalog.sqlite\`).
 
-## 2. Abfangregeln (Security Rules)
-* **Kosten-Lock:** Schützt das Tokenbudget. Keine automatisierten Loops ohne manuelle Absegnung.
-* **Feature-Governance:** Alle Funktionalitäten müssen einen klaren Mehrwert für den Offline-Masterindex bieten. Unnötige Animationen oder unproduktive Telemetriewerte sind verboten.`
+## 2. Die 9 Chef-Aufgaben
+1. **Nachrichten-Verständnis:** Tiefgehendes Erfassen und Klassifizieren eingehender Texte und Nachrichten.
+2. **Medien-Klassifizierung:** Präzises Erfassen und Parsen von hochgeladenen Datei- und Bildinhalten (OCR & OCR-Plausibilität).
+3. **Kontext-Reconciliation:** Kontinuierlicher Abgleich neuer Eingaben gegen Patricks bestehende Dossiers, Regelwerke und Vereinbarungen.
+4. **Varianz-Visualisierung:** Sichtbarmachen von Inkonsistenzen, Anomalien und fehlenden Kontext-Sicherungen im User Interface.
+5. **Zeitstrahl-Synchronisation:** Nahtlose Fortschreibung des globalen Omnichannel-Zeitstrahls.
+6. **Review-Queue Pflege:** Verwaltung ausstehender Triage-Entscheidungen mit präzisen Quellenangaben.
+7. **Antwortentwürfe:** Automatische Vorbereitung kontextsensitiver Antwortvorschläge für SMS, WhatsApp und Mailings.
+8. **Asynchrones Lernen:** Dynamische Ableitung neuer systemweiter Systemparameter aus bestätigten Triage-Entscheidungen.
+9. **Zero-Risk Policy:** Strikte Blockade riskanter Systemschreibvorgänge ohne physischen Beleg oder manuelle Freigabe (Gate-Option).
+
+## 3. Bewertungsmodell Kommunikation
+Jede eingehende Nachricht durchläuft ein mehrdimensionales Bewertungssystem:
+
+* **Quelle:** SMS, WhatsApp, Gmail, App Notification, Lokales System.
+* **Absender-Vertrauenswürdigkeit:** Bekannt, Unbekannt, Familie, Schule, Versicherung, Dienstleister.
+* **Inhaltliche Relevanz:** Termin, Frage, Frist, Budget/Geld, Kind/Familie, Gesundheit, Recht, Lieferung.
+* **Handlungsbedarf:** Keine Aktion, Antwort entwerfen, Rückfrage stellen, Kalendereintrag, Fokus-Priorität, Sofort melden.
+* **Sicherheit & Integrität:** Bewertung auf externe Manipulation, Phishing-Indikatoren oder fehlenden System-Kontext.
+* **Plausibilität:** Abgleich, ob die Nachricht logisch zu bekannten Themenbereichen und existierenden Entitäten passt.
+
+## 4. Die Zeitstrahl-Regel
+Unabhängig von ihrer Relevanz werden ausnahmslos alle Systemereignisse in der globalen Timeline registriert. Der funktionale Unterschied liegt ausschließlich im zugewiesenen Status:
+
+* \`focus\`: Akuter Handlungsbedarf am heutigen Tag.
+* \`important\`: Langfristig wichtig, benötigt geordnete Ablage.
+* \`done\`: Bereits erfolgreich triagiert und verbucht.
+* \`not_important\`: Informationsrauschen (Registriert, aber ausgeblendet).
+* \`needs_context\`: Blockiert in der Triage aufgrund fehlender Belege.
+* \`needs_reply\`: Formulierung eines Antwortentwurfs empfohlen.
+* \`archived\`: Historischer Systemzustand.
+
+## 5. Kontext-Lernmodelle
+Eingehender Kontext wird von Patricks Core-Schnittstelle in drei Klassen eingeteilt:
+1. **Globaler Chef-Chat:** Direkte, dauerhafte System-Muster (z.B. „Merke dir...“).
+2. **Spezifisches Kontextfeld:** Nachrichtenspezifische Zusatzinformationen.
+3. **Review/Sortierschema:** Korrekturen an Lernentscheidungen während der manuellen Triage.
+
+Der Index-Chef unterscheidet hierbei präzise:
+* *Dauerhafte Regeln* (z.B. Kreditkarten-Limits, Adressdaten),
+* *Zeitlich begrenzter Kontext* (z.B. temporäre Parkbewilligungen),
+* *Personenbezogene Beziehungen* (Familie, Kontakte),
+* *Einmalige E-Mail/Dokumenten-Kontexte*,
+* *Strukturelle Korrekturen* falscher Vorklassifizierungen.
+
+## 6. Plausibilitätsprüfungen
+Vor der Freigabe einer systemrelevanten Aktion verifiziert die Heuristik:
+* Ist die Datenquelle unmanipuliert?
+* Ist der Absender eindeutig im sqlite_catalog vorhanden?
+* Gibt es Widersprüche zu älteren, archivierten Context-Dokumenten?
+* Handelt es sich um relative Zeitangaben („Morgen“) oder absolute Kalendermuster?
+* Befinden sich zeitkritische Fristen im Text?
+* Liegt ein sensitiver Bezug vor (Finanzen, Recht, Kinder, Gesundheit)?
+* Benötigt der Algorithmus weiteren, manuell erfragbaren Kontext?
+
+## 7. Letzter Systemreparaturstand (2026-06-09)
+* Bereinigung veralteter oder irreführender Testdaten im Chef-Kanal.
+* Filterung aller experimentellen Widget-Proben und reinen QA-Simulationszeilen.
+* Strikte Unterdrückung von Systemgeräuschen wie „Keine Antwort vom Responses-Kern“.
+* Vollständige funktionale Trennung zwischen administrativen Bedienaktionen und dem echten Chatdienst des Index-Chefs.`
       },
       {
         name: "NEXUS_CHEF_CONTEXT_INTERFACE_GUIDE_20260607.md",

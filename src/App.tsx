@@ -330,9 +330,12 @@ export default function App() {
   // Available core tabs in a highly visual configuration containing tool explanations
   const AVAILABLE_TABS = [
     { id: 'nexi' as const, label: 'Nexi Dialog-Chef', desc: 'Naturalsprachliche Steuerung & Aktionen für Patricks Server', icon: MessageSquare, color: 'text-emerald-400' },
+    { id: 'triage' as const, label: 'Triage-Zentrale', desc: 'SMS, Uploads & System-Benachrichtigungen prüfen und abfangen', icon: Activity, color: 'text-rose-400' },
     { id: 'android' as const, label: 'Android-Daemon', desc: 'Mobiles Ingestion-Schnittstellen-Gadget & Ingress Queue', icon: Smartphone, color: 'text-sky-400' },
     { id: 'database' as const, label: 'SQLite Search (NLP)', desc: 'Optimierte Heuristik-Suche im lokalen Datenkatalog', icon: Database, color: 'text-purple-400' },
-    { id: 'explorer' as const, label: 'Datei-Explorer (C:\\)', desc: 'Patrick\'s SSOT Textdokumente, Regelwerke & HMAC Keys', icon: FolderOpen, color: 'text-indigo-400' },
+    { id: 'explorer' as const, label: 'Datei-Explorer (C:\\)', desc: 'Patricks SSOT Textdokumente, Regelwerke & HMAC Keys', icon: FolderOpen, color: 'text-indigo-400' },
+    { id: 'gemini' as const, label: 'Gemini Playground', desc: 'LLM Zweitmeinung, Budget-Bewertung & System-Vorschläge', icon: Sparkles, color: 'text-amber-400' },
+    { id: 'metrics' as const, label: '3D Speicherallokation', desc: 'Immersive Echtzeit-Visualisierung der Dateigrößen & Datenstruktur', icon: Layers, color: 'text-cyan-400' },
     { id: 'adapter' as const, label: 'Governance & Limits', desc: 'Provider-Steuerung, Invarianten & Budget-Deckelung ($15)', icon: Sliders, color: 'text-pink-400' },
     { id: 'logs' as const, label: 'Protokolle', desc: 'Echtzeit-Diagnosezeilen der lokalen Systembewegungen', icon: Terminal, color: 'text-teal-400' }
   ];

@@ -77,7 +77,7 @@ export const LogConsole: React.FC<LogConsoleProps> = ({ logs, onAddLog, onClearL
       onAddLog({
         type: 'info',
         source: 'PowerShell',
-        message: 'Parsing manifest: G:\\Meine Ablage\\Nexus\\11_SCHNITTSTELLEN\\nexus_ai_studio_file_manifest.json...'
+        message: 'Parsing manifest: G:\\Meine Ablage\\Nexus\\01_ARCHITEKTUR\\nexus_file_manifest.json...'
       });
     }, 800);
 
@@ -85,7 +85,7 @@ export const LogConsole: React.FC<LogConsoleProps> = ({ logs, onAddLog, onClearL
       onAddLog({
         type: 'info',
         source: 'Chef-Logik',
-        message: 'Loading context files: [NEXUS_CONTEXT_FOR_GEMINI.md, AI_STUDIO_START_PROMPT.md]...'
+        message: 'Loading context files: [NEXUS_GESAMTDOKUMENTATION_STAND_20260607.md, NEXUS_ARCHITEKTUR.md]...'
       });
     }, 1600);
 

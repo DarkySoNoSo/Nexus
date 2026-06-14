@@ -18,7 +18,7 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status, onRefresh, i
     <div className="bg-[#050508] border-b border-[#14243b] text-zinc-300 py-2.5 px-4 mb-2">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Title and version */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="relative flex h-2 w-2">
             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${status.status === 'online' ? 'bg-emerald-400' : 'bg-amber-400'} opacity-75`}></span>
             <span className={`relative inline-flex rounded-full h-2 w-2 ${status.status === 'online' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
@@ -27,7 +27,11 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status, onRefresh, i
             NEXUS
           </h1>
           <span className="text-[9px] text-[#00ff66] font-mono bg-[#112d1c] px-1.5 py-0.5 rounded border border-[#114b2d] uppercase tracking-wider">
-            {status.status === 'online' ? 'Active' : 'Offline'}
+            {status.status === 'online' ? 'Aktiv' : 'Offline'}
+          </span>
+          <span className="text-[9px] text-sky-400 font-mono bg-sky-950 px-2 py-0.5 rounded border border-sky-850 uppercase tracking-widest font-extrabold flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-sky-450 bg-sky-400 animate-pulse"></span>
+            APK MASTER MODE DIRECTED
           </span>
         </div>
 
@@ -47,8 +51,8 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status, onRefresh, i
 
           {/* SQLite DB stats */}
           <div className="bg-[#09090d] px-2 py-1 rounded border border-[#14243b] flex items-center gap-1">
-            <span className="text-zinc-500">DB:</span>
-            <span className="text-emerald-400 font-bold">{status.totalRecords.toLocaleString('de-DE')}</span>
+            <span className="text-zinc-500">KATALOG:</span>
+            <span className="text-emerald-400 font-bold">{status.totalRecords.toLocaleString('de-DE')} Einträge</span>
             <span className="text-zinc-650 text-zinc-600">({status.totalSizeGb} GB)</span>
           </div>
 
@@ -58,8 +62,8 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status, onRefresh, i
               ? 'bg-[#112d1c] border-emerald-950/40 text-emerald-400' 
               : 'bg-[#2b181a] border-red-950/40 text-red-400'
           }`}>
-            <span>AI:</span>
-            <span className="font-bold">{status.apiKeySet ? 'ACTIVE' : 'OFFLINE'}</span>
+            <span>GEMINI API:</span>
+            <span className="font-bold">{status.apiKeySet ? 'AKTIV' : 'SIMULATIONSTAKTUNG'}</span>
           </div>
         </div>
 
@@ -72,7 +76,7 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status, onRefresh, i
             id="refresh-status-btn"
           >
             <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin text-sky-400' : ''}`} />
-            Refresh
+            Status aktualisieren
           </button>
         </div>
       </div>

@@ -45,5 +45,13 @@
   2. **Phantom-Auflösung**: Spezifische Aufklärung über den "Phantom"-Charakter der Stromrechnung: Erkennung, dass das physische PDF (`rec_1`) existiert, aber fälschlicherweise als "Android Collector - SMS Ingest" klassifiziert wurde. Bereitstellung eines "Metadaten-Reparatur" Buttons zur vollautomatischen Bereinigung und Synchronisierung.
   3. **Visual Core Refining (Grafik-Tuning)**: Premium neonbeleuchtete Kardinalskanten, gläserne Backdrop-Filter, dynamischer Farbkontrast anhand der Kategorie-Codes und ein animierter, beweglicher Laser-Scan-Balken für erstklassiges visuelles Feedback während des Audits.
 
+### [CHANGE_07] Android APK: Master-System-Ausrichtung & Live-Validierung
+- **Status**: DRAFT / DURCHGEFÜHRT
+- **Ziel**: Vollständige Ausrichtung des Nexus-Ecosystems auf die mobile Android-App (APK) als alleinigem MASTER.
+- **Implementierte Features**:
+  1. **APK Master-Rolle**: Neuausrichtung der `NEXUS_ARCHITEKTUR.md` – die APK ist kein simpler mobiler Sensor mehr, sondern das primäre Leitsystem (Master-Node), gegen das alle Satelliten (Web/PC) abgleichen.
+  2. **Echtzeit-Plausibilität & Triage-Simulator (ChefRules.tsx)**: Ausfallsicheres Regelportal des Register-Chefs für SMS-Ingestionen, Phishing-Isolierung und Fristgebundenheit mit automatisierten PEM/BOM-Exportchecks.
+  3. **StatusBanner Koppelung**: Prominenter `APK MASTER MODE DIRECTED` Indikator im globalen Header zur Visualisierung der neuen Führungs-Rolle der Kivy Application.
+
 
 

@@ -44,10 +44,11 @@ export const GeminiPlayground: React.FC<GeminiPlaygroundProps> = ({ folders, onC
   ];
 
   const getContextForGemini = () => {
-    const folder = folders.find(f => f.id === '11_SCHNITTSTELLEN');
-    const systemPromptDoc = folder?.files.find(file => file.name === "AI_STUDIO_START_PROMPT.md")?.content || '';
-    const mainCtxDoc = folder?.files.find(file => file.name === "NEXUS_CONTEXT_FOR_GEMINI.md")?.content || '';
-    return `${mainCtxDoc}\n\n=== SYSTEM_PROMPT ===\n${systemPromptDoc}`;
+    const fStart = folders.find(f => f.id === '00_START_HIER');
+    const fArch = folders.find(f => f.id === '01_ARCHITEKTUR');
+    const statusDoc = fStart?.files.find(file => file.name === "STATUS_AKTUELL.md")?.content || '';
+    const archDoc = fArch?.files.find(file => file.name === "NEXUS_ARCHITEKTUR.md")?.content || '';
+    return `${archDoc}\n\n=== SYSTEM_STATUS ===\n${statusDoc}`;
   };
 
   const handleRunPreset = async (title: string, prText: string, cat: string) => {

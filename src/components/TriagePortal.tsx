@@ -480,9 +480,9 @@ export const TriagePortal: React.FC<TriagePortalProps> = ({ onAddLog, systemProv
           <div>
             <h2 className="text-sm uppercase tracking-widest font-mono text-white flex items-center gap-2">
               <Smartphone className="h-4.5 w-4.5 text-indigo-400 animate-pulse" />
-              <span>Triage-Zentrale v40.44</span>
+              <span>Triage-Zentrale</span>
               <span className="text-[10px] font-mono font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                Active
+                Aktiv
               </span>
             </h2>
             <p className="text-xs text-gray-500 mt-1 font-sans">

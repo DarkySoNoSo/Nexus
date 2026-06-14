@@ -224,11 +224,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
                     {/* Editor Text Area */}
                     <div className="flex-1 p-3 min-h-0 flex flex-col">
-                      {selectedFolderId === '11_SCHNITTSTELLEN' && (
-                        <div className="bg-sky-500/10 border border-sky-500/15 text-sky-200 p-2.5 rounded text-[11px] mb-2 font-sans flex items-start gap-1.5 leading-snug shadow-sm shrink-0">
-                          <Info className="h-4 w-4 shrink-0 text-sky-450 mt-0.5" />
+                      {selectedFolderId === '00_START_HIER' && (
+                        <div className="bg-emerald-500/10 border border-emerald-500/15 text-emerald-200 p-2.5 rounded text-[11px] mb-2 font-sans flex items-start gap-1.5 leading-snug shadow-sm shrink-0">
+                          <Info className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
                           <span>
-                            <strong>AI Studio Kontext:</strong> Diese Konfigurationen dienen als System-Prompts für deine Gemini Sessions. Kopiere sie einfach per "Kopieren" heraus.
+                            <strong>nexus Status:</strong> Aktuelle Richtungsentscheide und Statusprotokolle deines Index-Home-Centers.
                           </span>
                         </div>
                       )}

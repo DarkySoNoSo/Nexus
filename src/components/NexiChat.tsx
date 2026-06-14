@@ -38,7 +38,7 @@ export function NexiChat({ onAddLog, systemProvider }: NexiChatProps) {
     {
       id: 'welcome_1',
       role: 'assistant',
-      content: `Guten Tag, Patrick Herzog. Ich bin **Nexi**, deine maßgeschneiderte System-Agentin für den **Nexus v40.44** Master-Index.
+      content: `Guten Tag, Patrick Herzog. Ich bin **Nexi**, deine maßgeschneiderte System-Agentin für den **nexus** Index.
 
 Ich habe vollen Zugriff auf dein deklariertes Home Center (\`C:\\MasterIndex_Storage\`) und analysiere alle einkommenden Benachrichtigungen sowie unseren SQLite-Katalog (\`sqlite_catalog.db\`).
 
@@ -46,7 +46,6 @@ Ich habe vollen Zugriff auf dein deklariertes Home Center (\`C:\\MasterIndex_Sto
 1. Jede PowerShell- oder Python-Code-Generierung von mir ist strikt **UTF-8-sig (BOM-sicher)**.
 2. Alle Datei-Operationen laufen transaktionssicher im **try-finally-close** Schema ab, um SQLite Locks zu vermeiden.
 3. Änderungen trage ich als **DRAFT** in den \`NEXUS_CHANGE_DRAFT_LEDGER.md\` Ledger ein.
-4. Android Synchronisations-Probleme (Errno 13/14) löse ich durch einen **lokalen Offline-Puffer mit Exponential-Backoff**.
 
 Wie kann ich dich heute im Datenzentrum unterstützen?`,
       timestamp: new Date()
@@ -207,7 +206,7 @@ Soll ich diese Änderung in dem Ledger protokollieren?`;
           </div>
 
           <h3 className="text-base font-bold text-white tracking-wide">Nexi System-Zentrale</h3>
-          <p className="text-xs text-gray-400 font-mono mt-1">Nexus Profile Engine v40.44</p>
+          <p className="text-xs text-gray-400 font-mono mt-1">nexus system engine</p>
 
           <div className="w-full border-t border-[#222227] my-4 pt-3 space-y-2 text-left">
             <div className="flex items-center justify-between text-[11px]">
@@ -249,14 +248,6 @@ Soll ich diese Änderung in dem Ledger protokollieren?`;
             >
               <Terminal className="h-3 w-3 text-indigo-400 flex-shrink-0" />
               <span>PS-BOM Script anfordern</span>
-            </button>
-
-            <button
-              onClick={() => handleQuickAction("Erkläre mir noch einmal wie mein Android-Sync fehlerfrei den Fehler 13/14 im Standby umgeht")}
-              className="w-full text-left text-xs bg-[#19191d] hover:bg-[#222227] text-gray-300 hover:text-white p-2.5 rounded-lg border border-[#222227] transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <Cpu className="h-3 w-3 text-sky-400 flex-shrink-0" />
-              <span>Android Errno 13/14 Behebung</span>
             </button>
 
             <button

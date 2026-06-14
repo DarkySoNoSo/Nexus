@@ -158,7 +158,7 @@ export const AndroidEmulator: React.FC<AndroidEmulatorProps> = ({ onAddLog }) =>
         
         {/* Abstract design elements to enforce modern tech frame */}
         <div className="absolute top-2 left-6 text-[9px] font-mono text-zinc-500 tracking-wider">
-          NEXUS PORTABLE APK EMULATOR v40.44
+          NEXUS EMULATOR
         </div>
 
         {/* 3D Cellphone Card */}
@@ -206,7 +206,7 @@ export const AndroidEmulator: React.FC<AndroidEmulatorProps> = ({ onAddLog }) =>
               
               {/* Kivy App Header */}
               <div className="bg-[#030304] border-2 border-[#14243b] p-2 rounded-xl text-center">
-                <p className="text-xs font-extrabold text-[#00c0ff] tracking-wide uppercase">NEXUS DAEMON v40.44</p>
+                <p className="text-xs font-extrabold text-[#00c0ff] tracking-wide uppercase">nexus daemon</p>
                 <p className={`text-[9px] font-mono mt-0.5 ${isOnline ? 'text-emerald-450 text-emerald-400' : 'text-amber-500'}`}>
                   {isOnline ? `[ ONLINE ] Verbunden mit Master: ${serverUrl}` : `[ OFFLINE ] Keine Verbindung zu: ${serverUrl}`}
                 </p>

@@ -197,7 +197,7 @@ export const ThreeDMetrics: React.FC<ThreeDMetricsProps> = ({ status }) => {
     setAuditLogs([
       `[INIT] Starte Integritäts-Audit für Block: ${selected.name}`,
       `[PATH] Physischer Pfad-Check: ${selected.path}`,
-      `[SQL] Verbinde mit Master-SQLite-Katalog auf Port 8081... v40.44`,
+      `[SQL] Verbinde mit SQLite-Katalog auf Port 8081...`,
     ]);
 
     let currentPercent = 5;
@@ -564,25 +564,25 @@ export const ThreeDMetrics: React.FC<ThreeDMetricsProps> = ({ status }) => {
                     onClick={() => { setCameraPreset('orbit'); }}
                     className={`px-1.5 py-0.5 rounded transition ${cameraPreset === 'orbit' ? 'bg-indigo-600 text-white font-bold' : 'text-gray-400 hover:text-white'}`}
                   >
-                    Orbit
+                    Umlauf
                   </button>
                   <button 
                     onClick={() => { setCameraPreset('closeup'); }}
                     className={`px-1.5 py-0.5 rounded transition ${cameraPreset === 'closeup' ? 'bg-indigo-600 text-white font-bold' : 'text-gray-400 hover:text-white'}`}
                   >
-                    Close-Up
+                    Nahaufnahme
                   </button>
                   <button 
                     onClick={() => { setCameraPreset('birdseye'); }}
                     className={`px-1.5 py-0.5 rounded transition ${cameraPreset === 'birdseye' ? 'bg-indigo-600 text-white font-bold' : 'text-gray-400 hover:text-white'}`}
                   >
-                    Top-Down
+                    Aufsicht
                   </button>
                 </div>
 
                 <div className="bg-[#0e0e11]/90 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-white/5 flex items-center gap-1.5 text-[10px]">
                   <RotateCw className="h-3 w-3 text-emerald-400" />
-                  <span className="text-gray-400 font-mono">ORBIT SPEED:</span>
+                  <span className="text-gray-400 font-mono">ROTATION:</span>
                   <button 
                     onClick={() => { setRotationSpeed('off'); }}
                     className={`px-1.5 py-0.5 rounded transition ${rotationSpeed === 'off' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400 hover:text-white'}`}
@@ -606,14 +606,14 @@ export const ThreeDMetrics: React.FC<ThreeDMetricsProps> = ({ status }) => {
 
               {/* Quick Pillar HUD Indicator Labels inside canvas box */}
               <div className="absolute right-3 top-3 bg-[#0a0a0d]/80 backdrop-blur-sm border border-white/5 px-2.5 py-2 rounded-lg pointer-events-none hidden sm:block text-[9px] font-mono leading-relaxed max-w-[170px]">
-                <div className="text-gray-400 font-bold mb-1 border-b border-white/5 pb-0.5 uppercase tracking-wider">Pillargewichtung</div>
+                <div className="text-gray-400 font-bold mb-1 border-b border-white/5 pb-0.5 uppercase tracking-wider">Säulensegmente</div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-                  <span className="text-gray-300">File-Index / SQLite DB</span>
+                  <span className="text-gray-300">Datei-Index / SQLite</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-pink-400"></span>
-                  <span className="text-gray-300">Kommunikation Logs</span>
+                  <span className="text-gray-300">Verlauf & Timeline</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
@@ -685,9 +685,9 @@ export const ThreeDMetrics: React.FC<ThreeDMetricsProps> = ({ status }) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-white/5 pb-2">
                 <span className="text-[10px] uppercase font-mono tracking-wider text-gray-400 block flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-[#38bdf8]" /> Auto-Scan Diagnostics
+                  <Sparkles className="h-3.5 w-3.5 text-[#38bdf8]" /> Auto-Scan DIAGNOSE
                 </span>
-                <span className={`h-2 w-2 rounded-full bg-emerald-400 animate-pulse`} title="System Active"></span>
+                <span className={`h-2 w-2 rounded-full bg-emerald-400 animate-pulse`} title="System Aktiv"></span>
               </div>
               
               {/* Main Directory Metadata specs */}
@@ -705,8 +705,8 @@ export const ThreeDMetrics: React.FC<ThreeDMetricsProps> = ({ status }) => {
                     <span className="text-[#38bdf8] font-mono font-bold block mt-0.5 truncate bg-black/20 px-1.5 py-0.5 rounded">{activeCategory.table}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500 font-mono block text-[9px]">SICHERHEITS-AUDIT:</span>
-                    <span className="text-emerald-400 font-semibold block mt-0.5 bg-black/20 px-1.5 py-0.5 rounded text-[10px] truncate">Passed Verified</span>
+                    <span className="text-gray-500 font-mono block text-[9px]">INTEGRITÄTS-STATUS:</span>
+                    <span className="text-emerald-400 font-semibold block mt-0.5 bg-black/20 px-1.5 py-0.5 rounded text-[10px] truncate">Erfolgreich Geprüft</span>
                   </div>
                 </div>
 
@@ -716,7 +716,7 @@ export const ThreeDMetrics: React.FC<ThreeDMetricsProps> = ({ status }) => {
                     <span className="text-white font-mono font-bold block mt-0.5">{activeCategory.records.toLocaleString('de-DE')}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500 font-mono block text-[9px]">PHYSISCHER PLATZ:</span>
+                    <span className="text-gray-500 font-mono block text-[9px]">PHYSISCHER SPEICHER:</span>
                     <span className="text-emerald-400 font-mono font-extrabold block mt-0.5">{activeCategory.sizeGb.toLocaleString('de-DE')} GB</span>
                   </div>
                 </div>
@@ -732,10 +732,10 @@ export const ThreeDMetrics: React.FC<ThreeDMetricsProps> = ({ status }) => {
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-gray-400 font-mono flex items-center gap-1">
                     <Terminal className="h-3 w-3 text-indigo-400" />
-                    INTEGRITY TERMINAL LOGS
+                    INTEGRITÄTS-TERMINALEINTÖGE
                   </span>
                   {auditStatus === 'scanning' && (
-                    <span className="text-amber-400 font-mono animate-pulse">{auditProgress}% SCANNING...</span>
+                    <span className="text-amber-400 font-mono animate-pulse">{auditProgress}% PRÜFUNG...</span>
                   )}
                   {auditStatus === 'completed' && (
                     <span className="text-emerald-400 font-mono font-bold flex items-center gap-1">
