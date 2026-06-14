@@ -1,0 +1,6 @@
+{
+  "name": "nexus",
+  "description": "Control panel, simulation cockpit, and Gemini API companion for Patrick's local Nexus index and Assistant Core.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

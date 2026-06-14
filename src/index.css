@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom High Contrast black-blue-green designs */
+@layer base {
+  body {
+    background-color: #000000;
+    color: #f4f4f5;
+  }
+
+  /* Vibrant high-contrast text selection */
+  ::selection {
+    background-color: #0284c7;
+    color: #000000;
+  }
+}
+
+/* High Contrast Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10b981;
+}
+
+/* Glow effects and indicators */
+.neon-glow-blue {
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.25);
+}
+
+.neon-glow-green {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+}
+
+.card-tech {
+  background-color: #040406;
+  border: 1.5px solid #14243b;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.7);
+}
+
+.card-tech-green {
+  background-color: #040406;
+  border: 1.5px solid #112d1c;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.7);
+}
