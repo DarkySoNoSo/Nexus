@@ -7,10 +7,14 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -41,6 +45,7 @@ public final class MainActivity extends Activity {
     private static final String PAGE_MESSAGES = "messages";
     private static final String PAGE_FILES = "files";
     private static final String PAGE_TIMELINE = "timeline";
+    private static final String PAGE_COMPANION = "companion";
     private static final String PAGE_COLLECTOR = "collector";
     private static final String PAGE_WEB = "web";
 
@@ -57,19 +62,46 @@ public final class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        enableFullscreen();
         setContentView(buildUi());
         showHome();
     }
 
     @Override protected void onResume() {
         super.onResume();
+        enableFullscreen();
         if (PAGE_HOME.equals(currentPage)) showHome();
+    }
+
+    @Override public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) enableFullscreen();
     }
 
     @Override public void onBackPressed() {
         if (webView != null && webView.canGoBack()) { webView.goBack(); return; }
         if (!PAGE_HOME.equals(currentPage)) { showHome(); return; }
         super.onBackPressed();
+    }
+
+    private void enableFullscreen() {
+        Window window = getWindow();
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.setDecorFitsSystemWindows(false);
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller != null) {
+                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        }
+        window.getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        );
     }
 
     private View buildUi() {
@@ -123,6 +155,7 @@ public final class MainActivity extends Activity {
         if (subtitle != null && !subtitle.isEmpty()) pagePanel.addView(label(subtitle, 13, false, Color.rgb(226, 220, 212)));
         content.addView(pagePanel, card(PAGE_HOME.equals(page) ? 0 : 8));
         if (mainScroll != null) mainScroll.post(() -> mainScroll.scrollTo(0, 0));
+        enableFullscreen();
     }
 
     private LinearLayout activePanel() {
@@ -140,8 +173,9 @@ public final class MainActivity extends Activity {
         p.addView(section("MENUE"));
         row(p, nav("Chef", v -> showChefPage()), nav("Nachrichten", v -> showMessagesPage()));
         row(p, nav("Dateien", v -> showFilesPage()), nav("Zeitstrahl", v -> showTimelinePage()));
-        row(p, nav("Collector", v -> showCollectorPage()), nav("Web", v -> showWebPage("/")));
-        row(p, nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }), nav("Status", v -> showStatusOnly()));
+        row(p, nav("Companion", v -> showCompanionPage()), nav("Collector", v -> showCollectorPage()));
+        row(p, nav("Web", v -> showWebPage("/")), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }));
+        row(p, nav("Status", v -> showStatusOnly()), nav("Seite neu", v -> showHome()));
 
         TextView snapshot = logBox("Lade Kurzlage...");
         p.addView(snapshot, card(8));
@@ -150,13 +184,132 @@ public final class MainActivity extends Activity {
         p.addView(label(status(), 12, false, Color.rgb(215, 213, 208)));
         p.addView(section("THEME"));
         row(p, nav("Cyberblau", v -> setTheme("blue")), nav("Neon Gruen", v -> setTheme("green")));
-        row(p, nav("Orange", v -> setTheme("orange")), nav("Seite neu", v -> showHome()));
+        row(p, nav("Orange", v -> setTheme("orange")), nav("Menue oben", v -> showHome()));
     }
 
     private void showStatusOnly() {
         clearPage(PAGE_HOME, "Status", "Aktueller App- und Collector-Zustand.");
         activePanel().addView(label(status(), 13, false, Color.rgb(230, 225, 216)));
     }
+
+    private void showCompanionPage() {
+        clearPage(PAGE_COMPANION, "Companion", "Mini-Drache: Training, Arena, Evolution. Lokal, bis du den Chef aktiv fragst.");
+        LinearLayout p = activePanel();
+        p.addView(section("ZUSTAND"));
+        TextView state = logBox(companionSummary());
+        p.addView(state, card(8));
+        p.addView(section("AKTIONEN"));
+        row(p, nav("Training", v -> companionTrain(state)), nav("Arena", v -> companionArena(state)));
+        row(p, nav("Evolution", v -> companionEvolve(state)), nav("Ruhig", v -> companionCalm(state)));
+        row(p, nav("Chef mit Zustand", v -> companionChef()), nav("Tagesreset", v -> companionReset(state)));
+    }
+
+    private void companionTrain(TextView out) {
+        int energy = companionInt("energy", 80);
+        if (energy < 8) {
+            out.setText(companionSummary() + "\n\nTraining blockiert: Energie zu niedrig. Erst Ruhig oder Tagesreset.");
+            return;
+        }
+        addCompanionXp(12);
+        setCompanionInt("energy", clamp(energy - 8, 0, 100));
+        setCompanionInt("stress", clamp(companionInt("stress", 15) - 2, 0, 100));
+        out.setText(companionSummary() + "\n\nTraining: +12 XP, Fokus verbessert.");
+    }
+
+    private void companionArena(TextView out) {
+        int energy = companionInt("energy", 80);
+        int xp = companionInt("xp", 0);
+        int wins = companionInt("wins", 0);
+        int level = companionLevel();
+        if (energy < 20) {
+            out.setText(companionSummary() + "\n\nArena blockiert: Energie unter 20. Erst regenerieren.");
+            return;
+        }
+        boolean win = ((xp + wins * 7 + level * 11 + (int)(System.currentTimeMillis() / 60000L)) % 5) != 0;
+        if (win) {
+            setCompanionInt("wins", wins + 1);
+            addCompanionXp(24);
+            setCompanionInt("energy", clamp(energy - 18, 0, 100));
+            setCompanionInt("stress", clamp(companionInt("stress", 15) + 6, 0, 100));
+            out.setText(companionSummary() + "\n\nArena: Sieg. +24 XP. Stress steigt leicht.");
+        } else {
+            addCompanionXp(8);
+            setCompanionInt("energy", clamp(energy - 14, 0, 100));
+            setCompanionInt("stress", clamp(companionInt("stress", 15) + 10, 0, 100));
+            out.setText(companionSummary() + "\n\nArena: Niederlage. +8 XP. Rueckzug und Training empfohlen.");
+        }
+    }
+
+    private void companionEvolve(TextView out) {
+        int xp = companionInt("xp", 0);
+        int old = companionInt("level", 1);
+        int target = companionLevel();
+        setCompanionInt("level", Math.max(old, target));
+        out.setText(companionSummary() + "\n\nEvolution geprueft: " + dragonStage() + ". Naechste Schwelle: " + nextEvolutionText() + ".");
+    }
+
+    private void companionCalm(TextView out) {
+        setCompanionInt("energy", clamp(companionInt("energy", 80) + 15, 0, 100));
+        setCompanionInt("stress", clamp(companionInt("stress", 15) - 20, 0, 100));
+        addCompanionXp(3);
+        out.setText(companionSummary() + "\n\nRuhig: Energie regeneriert, Stress reduziert.");
+    }
+
+    private void companionReset(TextView out) {
+        setCompanionInt("energy", 85);
+        setCompanionInt("stress", 15);
+        out.setText(companionSummary() + "\n\nTagesreset: Energie und Stress neu gesetzt. XP und Siege bleiben erhalten.");
+    }
+
+    private void companionChef() {
+        String state = companionSummary();
+        showChefPage();
+        chefInput.setText("Companion-Zustand:\n" + state + "\n\nBitte priorisiere meinen Tag kurz und konkret. Was soll ich zuerst beachten?");
+        if (chefLog != null) chefLog.setText("Companion-Zustand bereit. Druecke 'An Chef senden', wenn du den Chef wirklich fragen willst.");
+    }
+
+    private int companionInt(String key, int fallback) {
+        return NexusConfig.prefs(this).getInt("companion_" + key, fallback);
+    }
+
+    private void setCompanionInt(String key, int value) {
+        NexusConfig.prefs(this).edit().putInt("companion_" + key, value).apply();
+    }
+
+    private void addCompanionXp(int delta) {
+        int xp = clamp(companionInt("xp", 0) + delta, 0, 9999);
+        setCompanionInt("xp", xp);
+        setCompanionInt("level", Math.max(companionInt("level", 1), companionLevelForXp(xp)));
+    }
+
+    private int companionLevel() { return companionLevelForXp(companionInt("xp", 0)); }
+    private int companionLevelForXp(int xp) { return Math.max(1, Math.min(50, 1 + (xp / 100))); }
+
+    private String dragonStage() {
+        int xp = companionInt("xp", 0);
+        if (xp >= 700) return "Nexus-Drache";
+        if (xp >= 320) return "Wachdrache";
+        if (xp >= 120) return "Jungdrache";
+        return "Nestling";
+    }
+
+    private String nextEvolutionText() {
+        int xp = companionInt("xp", 0);
+        if (xp < 120) return (120 - xp) + " XP bis Jungdrache";
+        if (xp < 320) return (320 - xp) + " XP bis Wachdrache";
+        if (xp < 700) return (700 - xp) + " XP bis Nexus-Drache";
+        return "maximale Stufe aktiv";
+    }
+
+    private String companionSummary() {
+        return "Mini-Drache: " + dragonStage()
+                + "\nLevel: " + companionLevel() + " | XP: " + companionInt("xp", 0) + " | Siege: " + companionInt("wins", 0)
+                + "\nEnergie: " + companionInt("energy", 80) + " | Stress: " + companionInt("stress", 15)
+                + "\nNaechste Evolution: " + nextEvolutionText()
+                + "\nPrinzip: lokal, kostenlos, erst Chef-Button nutzt den Chef-Kanal.";
+    }
+
+    private int clamp(int value, int min, int max) { return Math.max(min, Math.min(max, value)); }
 
     private void loadHomeSnapshot(TextView target) {
         new Thread(() -> {
@@ -189,7 +342,7 @@ public final class MainActivity extends Activity {
         int shown = 0;
         for (int i = 0; i < items.length() && shown < 5; i++) {
             JSONObject item = items.optJSONObject(i);
-            if (item == null || isHidden(item.optString("event_id", ""))) continue;
+            if (item == null || isHidden(item.optString("event_id", "")) || isClosedDecision(item)) continue;
             sb.append(shown + 1).append(". ").append(senderOf(item)).append(" - ")
                     .append(cut(previewOf(item), 120)).append('\n');
             shown++;
@@ -302,7 +455,7 @@ public final class MainActivity extends Activity {
             String eventId = item.optString("event_id", item.optString("conversation_key", ""));
             if (eventId.isEmpty()) eventId = item.optString("id", "");
             String unique = eventId.isEmpty() ? senderOf(item) + "|" + previewOf(item) : eventId;
-            if (seen.contains(unique) || isHidden(eventId)) continue;
+            if (seen.contains(unique) || isHidden(eventId) || isClosedDecision(item)) continue;
             if (!matchesMessage(item, needle)) continue;
             seen.add(unique);
 
@@ -319,6 +472,11 @@ public final class MainActivity extends Activity {
             added++;
         }
         return added;
+    }
+
+    private boolean isClosedDecision(JSONObject item) {
+        String decision = item == null ? "" : item.optString("latest_decision", "");
+        return "done".equals(decision) || "not_important".equals(decision);
     }
 
     private boolean matchesMessage(JSONObject item, String needle) {
@@ -612,6 +770,7 @@ public final class MainActivity extends Activity {
                 + "Endpoint: " + NexusConfig.endpoint(this) + "\n"
                 + "Sendestatus: " + NexusConfig.lastSendStatus(this) + "\n"
                 + "Widget: " + NexusConfig.lastWidgetStatus(this) + "\n"
+                + "Companion: " + dragonStage() + " L" + companionLevel() + "\n"
                 + "Theme: " + themeName();
     }
 
