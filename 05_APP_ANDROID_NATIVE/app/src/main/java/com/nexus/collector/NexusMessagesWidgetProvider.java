@@ -76,7 +76,6 @@ public final class NexusMessagesWidgetProvider extends AppWidgetProvider {
             return;
         }
 
-        // Sofort lokal ausblenden. Der Server kann nachziehen; die Bedienung bleibt trotzdem stabil.
         hideLocal(context, eventId);
         NexusConfig.setLastWidgetStatus(context, actionLabel(action) + " lokal markiert");
         updateAll(context);
@@ -152,7 +151,7 @@ public final class NexusMessagesWidgetProvider extends AppWidgetProvider {
         String lastError = "";
         for (String base : NexusConfig.baseUrlCandidates(context)) {
             try {
-                JSONObject root = new JSONObject(httpGet(base + "/api/widget/messages?limit=12"));
+                JSONObject root = new JSONObject(httpGet(base + "/api/widget/messages?limit=20"));
                 if (!root.optBoolean("ok", false)) {
                     lastError = hostLabel(base) + ": ungueltig";
                     continue;
@@ -184,12 +183,17 @@ public final class NexusMessagesWidgetProvider extends AppWidgetProvider {
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
             String eventId = item.optString("event_id", "");
-            if (isHidden(context, eventId)) continue;
+            if (isHidden(context, eventId) || isClosedDecision(item)) continue;
             state.items[slot] = new WidgetItem(eventId, item.optString("priority_band", "P?"), shorten(item.optString("sender", "Unbekannt"), 22), shorten(item.optString("body_preview", ""), 88));
             slot++;
         }
-        if (slot == 0) state.items[0] = new WidgetItem("", "P0", "Keine offene Fokusnachricht", "Ausgeblendete Nachrichten bleiben lokal verborgen.");
+        if (slot == 0) state.items[0] = new WidgetItem("", "P0", "Keine offene Fokusnachricht", "Ausgeblendete/erledigte Nachrichten bleiben verborgen.");
         return state;
+    }
+
+    private static boolean isClosedDecision(JSONObject item) {
+        String decision = item == null ? "" : item.optString("latest_decision", "");
+        return "done".equals(decision) || "not_important".equals(decision);
     }
 
     private static boolean isHidden(Context context, String eventId) {
