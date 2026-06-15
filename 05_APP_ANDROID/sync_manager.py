@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
 Nexus Android Offline Synchronization Manager
-Version: v40.45 contract-aligned
+Version: v40.45 live-endpoint aligned
 
 Purpose:
 - Keep mobile quick-ingest events locally when Nexus is offline.
 - Synchronize only pending/retry events.
 - Preserve data on every network/API failure.
-- Match the Nexus.PS1 collector contract.
+- Follow the live Nexus host order used by Windows runtime, Termux, and Collector.
 """
 
 import hashlib
@@ -20,17 +20,39 @@ from datetime import datetime, timezone
 import requests
 
 
-DEFAULT_SERVER_URL = "http://100.107.24.67:8081"
+DEFAULT_SERVER_URL = "http://192.168.1.216:8081"
+FALLBACK_SERVER_URLS = ["http://100.107.24.67:8081"]
 DEFAULT_COLLECTOR_ID = "nexus-collector-apk-v1"
 
 
 class OfflineSyncManager:
     def __init__(self, db_path="nexus_offline.db", server_url=DEFAULT_SERVER_URL, collector_secret=None):
         self.db_path = db_path
-        self.server_url = server_url.rstrip("/")
+        self.server_url = self._normalize_base_url(server_url)
         self.collector_id = DEFAULT_COLLECTOR_ID
         self.collector_secret = collector_secret or os.environ.get("NEXUS_COLLECTOR_SECRET", "")
         self._init_db()
+
+    def _normalize_base_url(self, value):
+        clean = (value or "").strip()
+        if not clean:
+            clean = DEFAULT_SERVER_URL
+        if not clean.startswith("http://") and not clean.startswith("https://"):
+            clean = "http://" + clean
+        while clean.endswith("/"):
+            clean = clean[:-1]
+        marker = clean.find("/api/")
+        if marker > 0:
+            clean = clean[:marker]
+        return clean
+
+    def _server_candidates(self):
+        seen = []
+        for value in [self.server_url, DEFAULT_SERVER_URL] + FALLBACK_SERVER_URLS:
+            clean = self._normalize_base_url(value)
+            if clean not in seen:
+                seen.append(clean)
+        return seen
 
     def _connect(self):
         conn = sqlite3.connect(self.db_path, timeout=15)
@@ -95,17 +117,21 @@ class OfflineSyncManager:
             conn.close()
 
     def check_connection(self):
-        try:
-            response = requests.get(f"{self.server_url}/api/health", timeout=3)
-            return response.status_code == 200
-        except requests.RequestException:
-            return False
+        for candidate in self._server_candidates():
+            try:
+                response = requests.get(f"{candidate}/api/health", timeout=3)
+                if response.status_code == 200:
+                    self.server_url = candidate
+                    return True
+            except requests.RequestException:
+                continue
+        return False
 
     def _build_payload(self, item_id, timestamp, event_type, payload_raw):
         payload_data = json.loads(payload_raw)
         payload_data["original_timestamp"] = timestamp
         payload_data["event_type"] = event_type
-        payload_data["source"] = payload_data.get("source") or "Android App Client - Mobile"
+        payload_data["source"] = payload_data.get("source") or "Nexus Android Mobile"
         payload_data["nexus_agent_meta"] = {
             "client": "Nexus Android Daemon",
             "queue_id": item_id,
