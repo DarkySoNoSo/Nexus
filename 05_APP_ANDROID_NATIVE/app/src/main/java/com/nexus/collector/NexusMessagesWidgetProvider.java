@@ -75,6 +75,12 @@ public final class NexusMessagesWidgetProvider extends AppWidgetProvider {
             updateAll(context);
             return;
         }
+
+        // Sofort lokal ausblenden. Der Server kann nachziehen; die Bedienung bleibt trotzdem stabil.
+        hideLocal(context, eventId);
+        NexusConfig.setLastWidgetStatus(context, actionLabel(action) + " lokal markiert");
+        updateAll(context);
+
         EXECUTOR.execute(() -> {
             String lastError = "";
             for (String base : NexusConfig.baseUrlCandidates(context)) {
@@ -93,7 +99,7 @@ public final class NexusMessagesWidgetProvider extends AppWidgetProvider {
                     lastError = hostLabel(base) + ": " + ex.getClass().getSimpleName();
                 }
             }
-            NexusConfig.setLastWidgetStatus(context, "Widget-Aktion Fehler " + lastError);
+            NexusConfig.setLastWidgetStatus(context, actionLabel(action) + " lokal erledigt; Server offen " + lastError);
             updateAll(context);
         });
     }
@@ -146,14 +152,14 @@ public final class NexusMessagesWidgetProvider extends AppWidgetProvider {
         String lastError = "";
         for (String base : NexusConfig.baseUrlCandidates(context)) {
             try {
-                JSONObject root = new JSONObject(httpGet(base + "/api/widget/messages?limit=8"));
+                JSONObject root = new JSONObject(httpGet(base + "/api/widget/messages?limit=12"));
                 if (!root.optBoolean("ok", false)) {
                     lastError = hostLabel(base) + ": ungueltig";
                     continue;
                 }
                 NexusConfig.rememberWorkingBaseUrl(context, base);
                 NexusConfig.setLastWidgetStatus(context, "OK " + hostLabel(base));
-                return parseState(root);
+                return parseState(context, root);
             } catch (Exception ex) {
                 lastError = hostLabel(base) + ": " + ex.getClass().getSimpleName();
             }
@@ -162,7 +168,7 @@ public final class NexusMessagesWidgetProvider extends AppWidgetProvider {
         return WidgetState.error("Nicht erreichbar: " + lastError);
     }
 
-    private static WidgetState parseState(JSONObject root) {
+    private static WidgetState parseState(Context context, JSONObject root) {
         JSONObject counters = root.optJSONObject("counters");
         JSONArray items = root.optJSONArray("items");
         int focus = counters == null ? 0 : counters.optInt("focus", 0);
@@ -173,13 +179,25 @@ public final class NexusMessagesWidgetProvider extends AppWidgetProvider {
             state.items[0] = new WidgetItem("", "P0", "Keine Fokusnachricht", "Nexus ist bereit.");
             return state;
         }
-        int limit = Math.min(5, items.length());
-        for (int i = 0; i < limit; i++) {
+        int slot = 0;
+        for (int i = 0; i < items.length() && slot < 5; i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
-            state.items[i] = new WidgetItem(item.optString("event_id", ""), item.optString("priority_band", "P?"), shorten(item.optString("sender", "Unbekannt"), 22), shorten(item.optString("body_preview", ""), 88));
+            String eventId = item.optString("event_id", "");
+            if (isHidden(context, eventId)) continue;
+            state.items[slot] = new WidgetItem(eventId, item.optString("priority_band", "P?"), shorten(item.optString("sender", "Unbekannt"), 22), shorten(item.optString("body_preview", ""), 88));
+            slot++;
         }
+        if (slot == 0) state.items[0] = new WidgetItem("", "P0", "Keine offene Fokusnachricht", "Ausgeblendete Nachrichten bleiben lokal verborgen.");
         return state;
+    }
+
+    private static boolean isHidden(Context context, String eventId) {
+        return eventId != null && !eventId.isEmpty() && NexusConfig.prefs(context).getBoolean("hidden_message_" + eventId, false);
+    }
+
+    private static void hideLocal(Context context, String eventId) {
+        if (eventId != null && !eventId.isEmpty()) NexusConfig.prefs(context).edit().putBoolean("hidden_message_" + eventId, true).apply();
     }
 
     private static String httpGet(String url) throws Exception {
