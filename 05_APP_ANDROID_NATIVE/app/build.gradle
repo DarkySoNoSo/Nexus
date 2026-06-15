@@ -17,7 +17,7 @@ android {
         applicationId "com.nexus.collector"
         minSdk 23
         targetSdk 35
-        versionCode 16
-        versionName "1.5.5"
+        versionCode 17
+        versionName "1.5.6"
     }
 }
