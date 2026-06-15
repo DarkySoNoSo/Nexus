@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/nexus_widget_bg"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+        <TextView android:id="@+id/widgetTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="NEXUS" android:textColor="#FFFFFFFF" android:textSize="15sp" android:textStyle="bold" />
+        <TextView android:id="@+id/widgetRefresh" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/nexus_widget_button" android:paddingLeft="9dp" android:paddingTop="5dp" android:paddingRight="9dp" android:paddingBottom="5dp" android:text="Neu" android:textColor="#FF181818" android:textSize="10sp" android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView android:id="@+id/widgetStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="6dp" android:text="Bereit" android:textColor="#FFFFA33B" android:textSize="11sp" android:textStyle="bold" />
+
+    <LinearLayout android:id="@+id/msg1Row" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:paddingTop="5dp">
+        <TextView android:id="@+id/msg1Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="12sp" android:textStyle="bold" />
+        <TextView android:id="@+id/msg1Body" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:textColor="#FFE4DED4" android:textSize="10sp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <TextView android:id="@+id/msg1Important" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FF181818" android:textSize="9sp" android:textStyle="bold" />
+            <TextView android:id="@+id/msg1Focus" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FF181818" android:textSize="9sp" android:textStyle="bold" />
+            <TextView android:id="@+id/msg1Ok" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FF181818" android:textSize="9sp" android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/msg2Row" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:paddingTop="5dp">
+        <TextView android:id="@+id/msg2Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="12sp" android:textStyle="bold" />
+        <TextView android:id="@+id/msg2Body" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:textColor="#FFE4DED4" android:textSize="10sp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <TextView android:id="@+id/msg2Important" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FF181818" android:textSize="9sp" android:textStyle="bold" />
+            <TextView android:id="@+id/msg2Focus" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FF181818" android:textSize="9sp" android:textStyle="bold" />
+            <TextView android:id="@+id/msg2Ok" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FF181818" android:textSize="9sp" android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/msg3Row" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:paddingTop="5dp">
+        <TextView android:id="@+id/msg3Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="12sp" android:textStyle="bold" />
+        <TextView android:id="@+id/msg3Body" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:textColor="#FFE4DED4" android:textSize="10sp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <TextView android:id="@+id/msg3Important" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FF181818" android:textSize="9sp" android:textStyle="bold" />
+            <TextView android:id="@+id/msg3Focus" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FF181818" android:textSize="9sp" android:textStyle="bold" />
+            <TextView android:id="@+id/msg3Ok" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FF181818" android:textSize="9sp" android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/msg4Row" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:paddingTop="4dp">
+        <TextView android:id="@+id/msg4Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="11sp" android:textStyle="bold" />
+        <TextView android:id="@+id/msg4Body" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:textColor="#FFE4DED4" android:textSize="9sp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <TextView android:id="@+id/msg4Important" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="3dp" android:paddingBottom="3dp" android:textColor="#FF181818" android:textSize="8sp" android:textStyle="bold" />
+            <TextView android:id="@+id/msg4Focus" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="3dp" android:paddingBottom="3dp" android:textColor="#FF181818" android:textSize="8sp" android:textStyle="bold" />
+            <TextView android:id="@+id/msg4Ok" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="3dp" android:paddingBottom="3dp" android:textColor="#FF181818" android:textSize="8sp" android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/msg5Row" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:paddingTop="4dp">
+        <TextView android:id="@+id/msg5Title" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="11sp" android:textStyle="bold" />
+        <TextView android:id="@+id/msg5Body" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:textColor="#FFE4DED4" android:textSize="9sp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <TextView android:id="@+id/msg5Important" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="3dp" android:paddingBottom="3dp" android:textColor="#FF181818" android:textSize="8sp" android:textStyle="bold" />
+            <TextView android:id="@+id/msg5Focus" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="3dp" android:paddingBottom="3dp" android:textColor="#FF181818" android:textSize="8sp" android:textStyle="bold" />
+            <TextView android:id="@+id/msg5Ok" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginLeft="5dp" android:layout_weight="1" android:background="@drawable/nexus_widget_button" android:gravity="center" android:paddingTop="3dp" android:paddingBottom="3dp" android:textColor="#FF181818" android:textSize="8sp" android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal" android:paddingTop="6dp">
+        <TextView android:id="@+id/widgetUpdated" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Aktualisiert" android:textColor="#FFB8B0A6" android:textSize="9sp" />
+        <TextView android:id="@+id/widgetOpen" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/nexus_widget_button" android:paddingLeft="9dp" android:paddingTop="5dp" android:paddingRight="9dp" android:paddingBottom="5dp" android:text="App" android:textColor="#FF181818" android:textSize="10sp" android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>
