@@ -44,6 +44,7 @@ public final class MainActivity extends Activity {
     private static final String PAGE_COLLECTOR = "collector";
     private static final String PAGE_WEB = "web";
 
+    private ScrollView mainScroll;
     private LinearLayout content;
     private TextView topTitle;
     private TextView topSub;
@@ -73,6 +74,7 @@ public final class MainActivity extends Activity {
 
     private View buildUi() {
         ScrollView scroll = new ScrollView(this);
+        mainScroll = scroll;
         scroll.setFillViewport(false);
         scroll.setBackgroundColor(Color.rgb(3, 4, 5));
 
@@ -108,7 +110,7 @@ public final class MainActivity extends Activity {
         messageSearch = null;
         content.removeAllViews();
         topTitle.setText(PAGE_HOME.equals(page) ? "NEXUS" : title.toUpperCase());
-        topSub.setText(PAGE_HOME.equals(page) ? "Mobile Chef-Zentrale" : "Eigene Seite | Zurueck ueber Menue");
+        topSub.setText(PAGE_HOME.equals(page) ? "Mobile Chef-Zentrale" : "Aktive Seite: " + title);
 
         if (!PAGE_HOME.equals(page)) {
             LinearLayout back = panel();
@@ -120,6 +122,7 @@ public final class MainActivity extends Activity {
         pagePanel.addView(label(title, 21, true, orange()));
         if (subtitle != null && !subtitle.isEmpty()) pagePanel.addView(label(subtitle, 13, false, Color.rgb(226, 220, 212)));
         content.addView(pagePanel, card(PAGE_HOME.equals(page) ? 0 : 8));
+        if (mainScroll != null) mainScroll.post(() -> mainScroll.scrollTo(0, 0));
     }
 
     private LinearLayout activePanel() {
@@ -145,6 +148,9 @@ public final class MainActivity extends Activity {
         loadHomeSnapshot(snapshot);
         p.addView(section("STATUS"));
         p.addView(label(status(), 12, false, Color.rgb(215, 213, 208)));
+        p.addView(section("THEME"));
+        row(p, nav("Cyberblau", v -> setTheme("blue")), nav("Neon Gruen", v -> setTheme("green")));
+        row(p, nav("Orange", v -> setTheme("orange")), nav("Seite neu", v -> showHome()));
     }
 
     private void showStatusOnly() {
@@ -605,7 +611,8 @@ public final class MainActivity extends Activity {
                 + "Outbox: " + NexusEventSender.outboxEvents(this) + " Event(s), " + NexusEventSender.outboxBytes(this) + " Bytes\n"
                 + "Endpoint: " + NexusConfig.endpoint(this) + "\n"
                 + "Sendestatus: " + NexusConfig.lastSendStatus(this) + "\n"
-                + "Widget: " + NexusConfig.lastWidgetStatus(this);
+                + "Widget: " + NexusConfig.lastWidgetStatus(this) + "\n"
+                + "Theme: " + themeName();
     }
 
     private boolean smsPermission() { return checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED; }
@@ -633,29 +640,37 @@ public final class MainActivity extends Activity {
         e.setHint(hint);
         e.setTextSize(13);
         e.setPadding(dp(11), dp(8), dp(11), dp(8));
-        e.setBackground(box(14, Color.rgb(13, 14, 14), Color.rgb(52, 37, 27)));
+        e.setBackground(box(14, Color.rgb(13, 14, 14), accentDark()));
         return e;
     }
 
     private TextView logBox(String text) {
         TextView v = label(text, 13, false, Color.rgb(232, 226, 218));
         v.setPadding(dp(10), dp(10), dp(10), dp(10));
-        v.setBackground(box(14, Color.rgb(8, 9, 9), Color.rgb(58, 42, 30)));
+        v.setBackground(box(14, Color.rgb(8, 9, 9), accentDark()));
         return v;
     }
 
     private LinearLayout vertical() { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); return l; }
-    private LinearLayout panel() { LinearLayout l = vertical(); l.setPadding(dp(10), dp(10), dp(10), dp(10)); l.setBackground(box(18, Color.rgb(18, 19, 17), Color.rgb(72, 47, 31))); l.setElevation(dp(7)); return l; }
-    private LinearLayout miniCard() { LinearLayout l = vertical(); l.setPadding(dp(9), dp(8), dp(9), dp(8)); l.setBackground(box(15, Color.rgb(11, 12, 11), Color.rgb(72, 47, 31))); l.setElevation(dp(3)); return l; }
+    private LinearLayout panel() { LinearLayout l = vertical(); l.setPadding(dp(10), dp(10), dp(10), dp(10)); l.setBackground(box(18, Color.rgb(18, 19, 17), accentDark())); l.setElevation(dp(7)); return l; }
+    private LinearLayout miniCard() { LinearLayout l = vertical(); l.setPadding(dp(9), dp(8), dp(9), dp(8)); l.setBackground(box(15, Color.rgb(11, 12, 11), accentDark())); l.setElevation(dp(3)); return l; }
     private TextView section(String s) { return label(s, 12, true, orange()); }
     private TextView label(String s, int sp, boolean bold, int color) { TextView v = new TextView(this); v.setText(s); v.setTextSize(sp); v.setTextColor(color); v.setGravity(Gravity.START); v.setPadding(0, dp(4), 0, dp(5)); if (bold) v.setTypeface(Typeface.DEFAULT_BOLD); return v; }
-    private Button nav(String s, View.OnClickListener l) { Button b = new Button(this); b.setText(s); b.setAllCaps(false); b.setTextSize(10); b.setTypeface(Typeface.DEFAULT_BOLD); b.setTextColor(Color.rgb(18, 13, 8)); b.setMinHeight(dp(30)); b.setMinimumHeight(0); b.setPadding(dp(4), 0, dp(4), 0); b.setBackground(box(12, Color.rgb(255, 158, 38), Color.rgb(255, 180, 58))); b.setOnClickListener(l); return b; }
+    private Button nav(String s, View.OnClickListener l) { Button b = new Button(this); b.setText(s); b.setAllCaps(false); b.setTextSize(10); b.setTypeface(Typeface.DEFAULT_BOLD); b.setTextColor(buttonText()); b.setMinHeight(dp(30)); b.setMinimumHeight(0); b.setPadding(dp(4), 0, dp(4), 0); b.setBackground(box(12, accentStart(), accentEnd())); b.setOnClickListener(l); return b; }
     private void row(LinearLayout parent, Button a, Button b) { LinearLayout r = new LinearLayout(this); r.setOrientation(LinearLayout.HORIZONTAL); LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f); lp.setMargins(0, dp(4), dp(4), 0); LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f); rp.setMargins(dp(4), dp(4), 0, 0); r.addView(a, lp); r.addView(b, rp); parent.addView(r); }
     private LinearLayout.LayoutParams card(int top) { LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(0, dp(top), 0, 0); return lp; }
     private GradientDrawable box(int radius, int fill, int stroke) { GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{fill, Color.rgb(4, 5, 5)}); d.setCornerRadius(dp(radius)); d.setStroke(dp(1), stroke); return d; }
     private int dp(int v) { return Math.round(v * getResources().getDisplayMetrics().density); }
-    private int orange() { return Color.rgb(255, 169, 54); }
+    private int orange() { return accentText(); }
     private int sub() { return Color.rgb(185, 178, 168); }
+
+    private String themeName() { return NexusConfig.prefs(this).getString("ui_theme", "orange"); }
+    private void setTheme(String name) { NexusConfig.prefs(this).edit().putString("ui_theme", name == null ? "orange" : name).apply(); showHome(); }
+    private int accentStart() { String t = themeName(); if ("blue".equals(t)) return Color.rgb(0, 192, 255); if ("green".equals(t)) return Color.rgb(0, 255, 102); return Color.rgb(255, 158, 38); }
+    private int accentEnd() { String t = themeName(); if ("blue".equals(t)) return Color.rgb(0, 78, 255); if ("green".equals(t)) return Color.rgb(0, 150, 70); return Color.rgb(255, 180, 58); }
+    private int accentText() { String t = themeName(); if ("blue".equals(t)) return Color.rgb(0, 192, 255); if ("green".equals(t)) return Color.rgb(0, 255, 102); return Color.rgb(255, 169, 54); }
+    private int accentDark() { String t = themeName(); if ("blue".equals(t)) return Color.rgb(16, 53, 88); if ("green".equals(t)) return Color.rgb(18, 72, 39); return Color.rgb(72, 47, 31); }
+    private int buttonText() { return "blue".equals(themeName()) ? Color.WHITE : Color.rgb(18, 13, 8); }
 
     private static String httpGet(String url) throws Exception {
         HttpURLConnection c = null;
