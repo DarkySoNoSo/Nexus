@@ -9,8 +9,8 @@ import java.util.List;
 
 public final class NexusConfig {
     public static final String PREFS = "nexus_collector";
-    public static final String DEFAULT_ENDPOINT = "http://192.168.1.216:8081/api/communication/ingest";
-    public static final String FALLBACK_ENDPOINT = "http://100.107.24.67:8081/api/communication/ingest";
+    public static final String DEFAULT_ENDPOINT = "http://100.107.24.67:8081/api/communication/ingest";
+    public static final String FALLBACK_ENDPOINT = "http://192.168.1.216:8081/api/communication/ingest";
     public static final String LOCAL_ENDPOINT = "http://192.168.1.216:8081/api/communication/ingest";
 
     private NexusConfig() {}
@@ -66,7 +66,7 @@ public final class NexusConfig {
     public static String normalizeBaseUrl(String value) {
         if (value == null) value = "";
         String clean = value.trim();
-        if (clean.isEmpty()) return "http://192.168.1.216:8081";
+        if (clean.isEmpty()) return "http://100.107.24.67:8081";
         if (!clean.startsWith("http://") && !clean.startsWith("https://")) clean = "http://" + clean;
         while (clean.endsWith("/")) clean = clean.substring(0, clean.length() - 1);
         int marker = clean.indexOf("/api/");
