@@ -6,35 +6,58 @@ This file defines the accepted interface for the Android/Kivy Nexus Daemon.
 
 The Daemon is not the full Nexus cockpit. It is the offline-capable mobile ingestion client.
 
+## Source Of Truth For Network Defaults
+
+The Android client must follow the live Nexus runtime files and Android Collector config, not old AI Studio mock data.
+
+Current accepted endpoint order:
+
+```text
+1. http://192.168.1.216:8081
+2. http://100.107.24.67:8081
+```
+
+Reason:
+
+- `C:\MasterIndex_Storage\nexus_current_url.json` currently reports `http://192.168.1.216:8081/`.
+- `NexusConfig.java` uses the same LAN host and the Tailscale fallback.
+- Termux config lists both hosts.
+
 ## Screen Order
 
 1. Header
-2. Master URL
-3. Mobile quick ingest
+2. Nexus server
+3. Mobile quick input
 4. Queue and sync
-5. Diagnostic terminal
+5. System log
 
 ## Header
 
 Visible title:
 
 ```text
-NEXUS DAEMON v40.45
+NEXUS MOBILE
 ```
 
 States:
 
 ```text
-[ ONLINE ] Verbunden mit Master: <url>
-[ OFFLINE ] Keine Verbindung zu: <url>
+ONLINE | <url>
+OFFLINE | <url>
 ```
 
-## Master URL
+## Nexus Server
 
 Default:
 
 ```text
-http://100.115.92.2:8081
+http://192.168.1.216:8081
+```
+
+Fallback:
+
+```text
+http://100.107.24.67:8081
 ```
 
 Rules:
@@ -42,26 +65,28 @@ Rules:
 - editable
 - full width
 - propagated into `OfflineSyncManager.server_url`
+- successful fallback becomes active runtime URL
 
-## Mobile Quick Ingest
+## Mobile Quick Input
 
 Fields:
 
 ```text
 Kategorie
-Titel / Quelle
-Beschreibung / Wert
+Kurz benennen
+Was soll Nexus speichern oder spaeter abgleichen?
 ```
 
 Button:
 
 ```text
-IN DIE OFFLINE-QUEUE SPEICHERN
+LOKAL SPEICHERN
 ```
 
 Rules:
 
 - title is required
+- no fake example payloads
 - save is local first
 - save works without network
 - queue counter updates immediately
@@ -71,13 +96,13 @@ Rules:
 Counter:
 
 ```text
-Queue: X Eintraege
+Queue: X
 ```
 
 Button:
 
 ```text
-JETZT ABGLEICHEN
+ABGLEICHEN
 ```
 
 Allowed statuses:
@@ -126,6 +151,7 @@ Background:   #000000
 Panel:        #05070d
 Panel 2:      #0a0d14
 Border:       #14243b
+Orange:       #ff6b14
 Neon Cyan:    #00c0ff
 Ingest Green: #009b4c
 Sync Blue:    #0066cc
@@ -140,10 +166,11 @@ Layout constraints:
 - desktop simulator size only outside Android/iOS
 - root layout must fill screen
 - portrait scroll must work
-- buttons max 40dp high
+- buttons max 36dp high
 - no hero image
 - no nested card stacks
 - no oversized orange blocks
+- no fake data examples
 
 ## Acceptance
 
@@ -155,3 +182,4 @@ Accepted only if:
 4. Queue counter increases after save.
 5. Missing Nexus server does not crash the app.
 6. Sync errors are visible but non-destructive.
+7. Default URL matches the current Nexus runtime config.
