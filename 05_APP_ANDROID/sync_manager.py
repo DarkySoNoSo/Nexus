@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 import requests
 
 
-DEFAULT_SERVER_URL = "http://100.115.92.2:8081"
+DEFAULT_SERVER_URL = "http://100.107.24.67:8081"
 DEFAULT_COLLECTOR_ID = "nexus-collector-apk-v1"
 
 
