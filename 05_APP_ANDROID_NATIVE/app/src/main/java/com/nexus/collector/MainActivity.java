@@ -48,6 +48,7 @@ public final class MainActivity extends Activity {
     private EditText chefInput;
     private TextView chefLog;
     private EditText endpointInput;
+    private EditText messageSearch;
     private WebView webView;
     private String currentPage = PAGE_HOME;
 
@@ -102,6 +103,7 @@ public final class MainActivity extends Activity {
         endpointInput = null;
         chefInput = null;
         chefLog = null;
+        messageSearch = null;
         content.removeAllViews();
         topTitle.setText(PAGE_HOME.equals(page) ? "NEXUS" : title.toUpperCase());
         topSub.setText(PAGE_HOME.equals(page) ? "Mobile Chef-Zentrale" : "Eigene Seite | Zurueck ueber Menue");
@@ -145,8 +147,7 @@ public final class MainActivity extends Activity {
 
     private void showStatusOnly() {
         clearPage(PAGE_HOME, "Status", "Aktueller App- und Collector-Zustand.");
-        LinearLayout p = activePanel();
-        p.addView(label(status(), 13, false, Color.rgb(230, 225, 216)));
+        activePanel().addView(label(status(), 13, false, Color.rgb(230, 225, 216)));
     }
 
     private void loadHomeSnapshot(TextView target) {
@@ -154,7 +155,7 @@ public final class MainActivity extends Activity {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
                 try {
-                    JSONObject json = new JSONObject(httpGet(base + "/api/widget/messages?limit=3"));
+                    JSONObject json = new JSONObject(httpGet(base + "/api/widget/messages?limit=5"));
                     if (!json.optBoolean("ok", false)) { last = host(base) + ": ok=false"; continue; }
                     NexusConfig.rememberWorkingBaseUrl(this, base);
                     String text = homeText(json, base);
@@ -177,12 +178,13 @@ public final class MainActivity extends Activity {
         sb.append("Fokus: ").append(focus).append(" | Alarm: ").append(alerts).append(" | Antwort: ").append(reply).append("\n\n");
         JSONArray items = root.optJSONArray("items");
         if (items == null || items.length() == 0) return sb.append("Keine offenen Fokusnachrichten.").toString();
-        int max = Math.min(3, items.length());
-        for (int i = 0; i < max; i++) {
+        int shown = 0;
+        for (int i = 0; i < items.length() && shown < 5; i++) {
             JSONObject item = items.optJSONObject(i);
-            if (item == null) continue;
-            sb.append(i + 1).append(". ").append(item.optString("sender", "Unbekannt")).append(" - ")
+            if (item == null || isHidden(item.optString("event_id", ""))) continue;
+            sb.append(shown + 1).append(". ").append(item.optString("sender", "Unbekannt")).append(" - ")
                     .append(cut(item.optString("body_preview", item.optString("body", "")), 120)).append('\n');
+            shown++;
         }
         return sb.toString().trim();
     }
@@ -201,25 +203,34 @@ public final class MainActivity extends Activity {
     }
 
     private void showMessagesPage() {
-        clearPage(PAGE_MESSAGES, "Nachrichten", "Eigene Seite. Gespräche sind kompakt gruppiert. Aktionen wirken auf die Unterhaltung.");
+        clearPage(PAGE_MESSAGES, "Nachrichten", "Eigene Seite. Suche findet auch Eintraege, die nicht in den ersten Fokus-Karten stehen.");
         LinearLayout p = activePanel();
-        row(p, nav("Neu laden", v -> showMessagesPage()), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showMessagesPage(); }));
+        messageSearch = input("Suchen, z.B. Inkasso, PayPal, Person, Betrag...", true);
+        p.addView(messageSearch, card(8));
         TextView summary = label("Lade Nachrichten...", 13, true, Color.rgb(240, 235, 226));
-        p.addView(summary, card(8));
         LinearLayout list = vertical();
+        row(p, nav("Suche", v -> loadMessages(summary, list, searchText())), nav("Inkasso", v -> { messageSearch.setText("inkasso"); loadMessages(summary, list, "inkasso"); }));
+        row(p, nav("Alle neu", v -> loadMessages(summary, list, "")), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); loadMessages(summary, list, searchText()); }));
+        p.addView(summary, card(8));
         p.addView(list);
-        loadMessages(summary, list);
+        loadMessages(summary, list, "");
     }
 
-    private void loadMessages(TextView summary, LinearLayout list) {
+    private String searchText() {
+        return messageSearch == null ? "" : messageSearch.getText().toString().trim().toLowerCase();
+    }
+
+    private void loadMessages(TextView summary, LinearLayout list, String filter) {
+        summary.setText("Lade Nachrichten...");
+        list.removeAllViews();
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
                 try {
-                    JSONObject json = new JSONObject(httpGet(base + "/api/widget/messages?limit=30"));
+                    JSONObject json = new JSONObject(httpGet(base + "/api/widget/messages?limit=120"));
                     if (!json.optBoolean("ok", false)) { last = host(base) + ": ok=false"; continue; }
                     NexusConfig.rememberWorkingBaseUrl(this, base);
-                    runOnUiThread(() -> renderMessages(summary, list, json, base));
+                    runOnUiThread(() -> renderMessages(summary, list, json, base, filter));
                     return;
                 } catch (Exception ex) { last = host(base) + ": " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 70); }
             }
@@ -228,31 +239,43 @@ public final class MainActivity extends Activity {
         }).start();
     }
 
-    private void renderMessages(TextView summary, LinearLayout list, JSONObject root, String base) {
+    private void renderMessages(TextView summary, LinearLayout list, JSONObject root, String base, String filter) {
         if (!PAGE_MESSAGES.equals(currentPage)) return;
+        String needle = filter == null ? "" : filter.trim().toLowerCase();
         JSONObject c = root.optJSONObject("counters");
         int focus = c == null ? 0 : c.optInt("focus", 0);
         int alarm = c == null ? 0 : c.optInt("alerts", 0);
         int reply = c == null ? 0 : c.optInt("needs_reply", 0);
-        summary.setText("Quelle: " + host(base) + "\nFokus: " + focus + " | Alarm: " + alarm + " | Antwort: " + reply);
-        list.removeAllViews();
         JSONArray items = root.optJSONArray("items");
-        if (items == null || items.length() == 0) { list.addView(label("Keine offenen Nachrichten.", 13, false, sub())); return; }
-        int max = Math.min(20, items.length());
-        for (int i = 0; i < max; i++) {
+        list.removeAllViews();
+        if (items == null || items.length() == 0) {
+            summary.setText("Quelle: " + host(base) + "\nKeine Nachrichten vom Server erhalten.");
+            return;
+        }
+        int shown = 0;
+        for (int i = 0; i < items.length() && shown < 40; i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
             String eventId = item.optString("event_id", "");
+            if (isHidden(eventId)) continue;
             String sender = item.optString("sender", "Unbekannt");
             String preview = item.optString("body_preview", item.optString("body", ""));
+            String action = item.optString("suggested_action", "pruefen");
+            String hay = (sender + " " + preview + " " + action + " " + item.optString("source", "")).toLowerCase();
+            if (!needle.isEmpty() && !hay.contains(needle)) continue;
+
             LinearLayout card = miniCard();
-            card.addView(label((i + 1) + ". [" + item.optString("priority_band", "P?") + "] " + sender, 15, true, Color.WHITE));
-            card.addView(label(item.optString("suggested_action", "pruefen"), 11, true, orange()));
-            card.addView(label(cut(preview, 250), 13, false, Color.rgb(232, 226, 216)));
+            card.addView(label((shown + 1) + ". [" + item.optString("priority_band", "P?") + "] " + sender, 15, true, Color.WHITE));
+            card.addView(label(action, 11, true, orange()));
+            card.addView(label(cut(preview, 270), 13, false, Color.rgb(232, 226, 216)));
             row(card, nav("Sehr wichtig", v -> decide(eventId, "very_important")), nav("Erledigt", v -> decide(eventId, "done")));
             row(card, nav("Zeitstrahl", v -> decide(eventId, "timeline_focus")), nav("Chef-Kontext", v -> putContext(sender, preview)));
             list.addView(card, card(8));
+            shown++;
         }
+        String filterText = needle.isEmpty() ? "" : " | Suche: " + needle;
+        summary.setText("Quelle: " + host(base) + "\nGeladen: " + items.length() + " | Sichtbar: " + shown + filterText + "\nFokus: " + focus + " | Alarm: " + alarm + " | Antwort: " + reply);
+        if (shown == 0) list.addView(logBox("Keine Treffer. Wenn du etwas erwartest: Suchwort vereinfachen oder im Web pruefen, ob der Server es liefert."));
     }
 
     private void putContext(String sender, String preview) {
@@ -264,8 +287,8 @@ public final class MainActivity extends Activity {
 
     private void decide(String eventId, String action) {
         if (eventId == null || eventId.isEmpty()) return;
-        TextView info = logBox("Sende Aktion: " + action + "...");
-        activePanel().addView(info, card(6));
+        hideLocal(eventId);
+        if (PAGE_MESSAGES.equals(currentPage)) showMessagesPage();
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
@@ -274,15 +297,22 @@ public final class MainActivity extends Activity {
                     JSONObject res = new JSONObject(httpPost(base + "/api/widget/message-action", body));
                     if (res.optBoolean("ok", false)) {
                         NexusConfig.rememberWorkingBaseUrl(this, base);
-                        runOnUiThread(this::showMessagesPage);
+                        NexusConfig.setLastWidgetStatus(this, action + " OK " + eventId);
                         return;
                     }
                     last = host(base) + ": " + res.optString("message", "ok=false");
                 } catch (Exception ex) { last = host(base) + ": " + ex.getClass().getSimpleName(); }
             }
-            final String err = last;
-            runOnUiThread(() -> info.setText("Aktion fehlgeschlagen: " + err));
+            NexusConfig.setLastWidgetStatus(this, "Lokal ausgeblendet, Serveraktion offen: " + action + " " + last);
         }).start();
+    }
+
+    private boolean isHidden(String eventId) {
+        return eventId != null && !eventId.isEmpty() && NexusConfig.prefs(this).getBoolean("hidden_message_" + eventId, false);
+    }
+
+    private void hideLocal(String eventId) {
+        if (eventId != null && !eventId.isEmpty()) NexusConfig.prefs(this).edit().putBoolean("hidden_message_" + eventId, true).apply();
     }
 
     private void showFilesPage() {
