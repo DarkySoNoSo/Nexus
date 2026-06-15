@@ -4,6 +4,7 @@ Nexus Android Daemon Application
 Responsive mobile layout for the Buildozer/Kivy APK.
 """
 
+import os
 import threading
 from datetime import datetime
 
@@ -70,7 +71,8 @@ class WrappedLabel(Label):
 class NexusDaemonApp(App):
     def build(self):
         self.title = "NEXUS DAEMON v40.45"
-        self.sync_manager = OfflineSyncManager()
+        db_path = os.path.join(self.user_data_dir, "nexus_offline.db")
+        self.sync_manager = OfflineSyncManager(db_path=db_path)
 
         outer = ColorBox(
             bg_color=(0, 0, 0, 1),
