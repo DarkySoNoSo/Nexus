@@ -68,15 +68,15 @@ jobs:
           cd 05_APP_ANDROID_NATIVE
           gradle --no-daemon :app:assembleDebug
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/Nexus-Chef-Native-v1.5.5-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk dist/Nexus-Chef-Native-v1.5.6-debug.apk
           ls -lah app/build/outputs/apk/debug dist
-          test -f dist/Nexus-Chef-Native-v1.5.5-debug.apk
+          test -f dist/Nexus-Chef-Native-v1.5.6-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v6
         with:
-          name: Nexus-Chef-Native-v1.5.5-APK
-          path: 05_APP_ANDROID_NATIVE/dist/Nexus-Chef-Native-v1.5.5-debug.apk
+          name: Nexus-Chef-Native-v1.5.6-APK
+          path: 05_APP_ANDROID_NATIVE/dist/Nexus-Chef-Native-v1.5.6-debug.apk
           if-no-files-found: error
 
       - name: Upload Build Diagnostics
