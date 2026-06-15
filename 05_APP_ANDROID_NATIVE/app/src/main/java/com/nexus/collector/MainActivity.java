@@ -42,12 +42,9 @@ public final class MainActivity extends Activity {
     private static final String PAGE_COLLECTOR = "collector";
     private static final String PAGE_WEB = "web";
 
-    private LinearLayout root;
     private LinearLayout content;
-    private TextView accessText;
-    private TextView statusText;
-    private TextView contentTitle;
-    private TextView contentBody;
+    private TextView topTitle;
+    private TextView topSub;
     private EditText chefInput;
     private TextView chefLog;
     private EditText endpointInput;
@@ -62,8 +59,7 @@ public final class MainActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
-        refreshStatus();
-        if (PAGE_HOME.equals(currentPage)) loadHomeSnapshot();
+        if (PAGE_HOME.equals(currentPage)) showHome();
     }
 
     @Override public void onBackPressed() {
@@ -76,67 +72,84 @@ public final class MainActivity extends Activity {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
         scroll.setBackgroundColor(Color.rgb(3, 4, 5));
-        root = vertical();
+
+        LinearLayout root = vertical();
         root.setPadding(dp(10), dp(12), dp(10), dp(18));
         scroll.addView(root);
 
-        LinearLayout head = panel();
-        head.addView(label("NEXUS CHEF NATIVE", 24, true, Color.WHITE));
-        head.addView(label("Chef, Kommunikation, Dateien und Widget in einer nativen App.", 12, false, sub()));
-        root.addView(head, card(0));
+        LinearLayout header = panel();
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout titleCol = vertical();
+        topTitle = label("NEXUS", 23, true, Color.WHITE);
+        topSub = label("Mobile Chef-Zentrale", 12, false, sub());
+        titleCol.addView(topTitle);
+        titleCol.addView(topSub);
+        titleRow.addView(titleCol, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        Button menu = nav("Menue", v -> showHome());
+        titleRow.addView(menu, new LinearLayout.LayoutParams(dp(92), LinearLayout.LayoutParams.WRAP_CONTENT));
+        header.addView(titleRow);
+        root.addView(header, card(0));
 
-        LinearLayout access = panel();
-        access.addView(section("ZUGAENGE"));
-        accessText = label("Pruefe Zugriffe...", 13, true, Color.rgb(240, 235, 226));
-        access.addView(accessText);
-        row(access, nav("Verbindung testen", v -> testConnection()), nav("Server / Rechte", v -> showCollectorPage()));
-        row(access, nav("Nachrichtenrecht", v -> openNotificationAccess()), nav("SMS-Recht", v -> requestSms()));
-        root.addView(access, card(8));
-
-        LinearLayout menu = panel();
-        menu.addView(section("MENUE"));
-        row(menu, nav("Home", v -> showHome()), nav("Chef", v -> showChefPage()));
-        row(menu, nav("Nachrichten", v -> showMessagesPage()), nav("Dateien", v -> showFilesPage()));
-        row(menu, nav("Zeitstrahl", v -> showTimelinePage()), nav("Collector", v -> showCollectorPage()));
-        row(menu, nav("Web", v -> showWebPage("/")), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); refreshStatus(); }));
-        root.addView(menu, card(8));
-
-        content = panel();
+        content = vertical();
         root.addView(content, card(8));
-
-        LinearLayout status = panel();
-        status.addView(section("STATUS"));
-        statusText = label("", 12, false, Color.rgb(215, 213, 208));
-        status.addView(statusText);
-        root.addView(status, card(8));
         return scroll;
     }
 
-    private void clearContent(String page, String title, String body) {
+    private void clearPage(String page, String title, String subtitle) {
         currentPage = page;
         webView = null;
         endpointInput = null;
         chefInput = null;
         chefLog = null;
         content.removeAllViews();
-        contentTitle = label(title, 20, true, orange());
-        contentBody = label(body == null ? "" : body, 13, false, Color.rgb(226, 220, 212));
-        content.addView(contentTitle);
-        if (body != null && !body.isEmpty()) content.addView(contentBody);
+        topTitle.setText(PAGE_HOME.equals(page) ? "NEXUS" : title.toUpperCase());
+        topSub.setText(PAGE_HOME.equals(page) ? "Mobile Chef-Zentrale" : "Eigene Seite | Zurueck ueber Menue");
+
+        if (!PAGE_HOME.equals(page)) {
+            LinearLayout back = panel();
+            row(back, nav("Zurueck", v -> showHome()), nav("Menue", v -> showHome()));
+            content.addView(back, card(0));
+        }
+
+        LinearLayout pagePanel = panel();
+        pagePanel.addView(label(title, 21, true, orange()));
+        if (subtitle != null && !subtitle.isEmpty()) pagePanel.addView(label(subtitle, 13, false, Color.rgb(226, 220, 212)));
+        content.addView(pagePanel, card(PAGE_HOME.equals(page) ? 0 : 8));
+    }
+
+    private LinearLayout activePanel() {
+        return (LinearLayout) content.getChildAt(content.getChildCount() - 1);
     }
 
     private void showHome() {
-        clearContent(PAGE_HOME, "Kurzlage", "Nur die wichtigsten Dinge. Vollansichten liegen auf eigenen Seiten.");
-        row(content, nav("Chef oeffnen", v -> showChefPage()), nav("Nachrichten", v -> showMessagesPage()));
-        row(content, nav("Dateien", v -> showFilesPage()), nav("Zeitstrahl", v -> showTimelinePage()));
-        row(content, nav("Collector", v -> showCollectorPage()), nav("Web", v -> showWebPage("/")));
-        loadHomeSnapshot();
+        clearPage(PAGE_HOME, "Uebersicht", "Nur Menue, Zugriffe, Kurzlage und Status. Jede Funktion oeffnet eine eigene Seite.");
+        LinearLayout p = activePanel();
+        p.addView(section("ZUGAENGE"));
+        p.addView(label(accessText(), 13, true, Color.rgb(238, 232, 224)));
+        row(p, nav("Verbindung testen", v -> testConnection()), nav("Collector", v -> showCollectorPage()));
+        row(p, nav("Nachrichtenrecht", v -> openNotificationAccess()), nav("SMS-Recht", v -> requestSms()));
+
+        p.addView(section("MENUE"));
+        row(p, nav("Chef", v -> showChefPage()), nav("Nachrichten", v -> showMessagesPage()));
+        row(p, nav("Dateien", v -> showFilesPage()), nav("Zeitstrahl", v -> showTimelinePage()));
+        row(p, nav("Collector", v -> showCollectorPage()), nav("Web", v -> showWebPage("/")));
+        row(p, nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }), nav("Status", v -> showStatusOnly()));
+
+        TextView snapshot = logBox("Lade Kurzlage...");
+        p.addView(snapshot, card(8));
+        loadHomeSnapshot(snapshot);
+        p.addView(section("STATUS"));
+        p.addView(label(status(), 12, false, Color.rgb(215, 213, 208)));
     }
 
-    private void loadHomeSnapshot() {
-        refreshStatus();
-        TextView snapshot = label("Lade Kurzlage...", 13, true, Color.rgb(240, 235, 226));
-        if (PAGE_HOME.equals(currentPage)) content.addView(snapshot, card(8));
+    private void showStatusOnly() {
+        clearPage(PAGE_HOME, "Status", "Aktueller App- und Collector-Zustand.");
+        LinearLayout p = activePanel();
+        p.addView(label(status(), 13, false, Color.rgb(230, 225, 216)));
+    }
+
+    private void loadHomeSnapshot(TextView target) {
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
@@ -145,12 +158,12 @@ public final class MainActivity extends Activity {
                     if (!json.optBoolean("ok", false)) { last = host(base) + ": ok=false"; continue; }
                     NexusConfig.rememberWorkingBaseUrl(this, base);
                     String text = homeText(json, base);
-                    runOnUiThread(() -> { if (PAGE_HOME.equals(currentPage)) snapshot.setText(text); });
+                    runOnUiThread(() -> { if (PAGE_HOME.equals(currentPage)) target.setText(text); });
                     return;
                 } catch (Exception ex) { last = host(base) + ": " + ex.getClass().getSimpleName(); }
             }
             final String err = last;
-            runOnUiThread(() -> { if (PAGE_HOME.equals(currentPage)) snapshot.setText("Nexus nicht erreichbar: " + err); });
+            runOnUiThread(() -> { if (PAGE_HOME.equals(currentPage)) target.setText("Nexus nicht erreichbar: " + err); });
         }).start();
     }
 
@@ -175,30 +188,30 @@ public final class MainActivity extends Activity {
     }
 
     private void showChefPage() {
-        clearContent(PAGE_CHEF, "Chef", "Kontext, Frage oder Auftrag direkt an den Index-Chef senden.");
+        clearPage(PAGE_CHEF, "Chef", "Direkter Kanal. Keine Kommunikationsliste auf dieser Seite.");
+        LinearLayout p = activePanel();
         chefInput = input("Dem Chef Kontext, Frage oder Auftrag schreiben...", false);
         chefInput.setMinLines(3);
         chefInput.setMaxLines(7);
-        content.addView(chefInput, card(8));
-        row(content, nav("An Chef senden", v -> sendChef()), nav("Chef laden", v -> loadChefLog()));
-        chefLog = label("Chef-Kanal wird geladen...", 13, false, Color.rgb(232, 226, 218));
-        chefLog.setPadding(dp(10), dp(10), dp(10), dp(10));
-        chefLog.setBackground(box(14, Color.rgb(8, 9, 9), Color.rgb(58, 42, 30)));
-        content.addView(chefLog, card(8));
+        p.addView(chefInput, card(8));
+        row(p, nav("An Chef senden", v -> sendChef()), nav("Chef laden", v -> loadChefLog()));
+        chefLog = logBox("Chef-Kanal wird geladen...");
+        p.addView(chefLog, card(8));
         loadChefLog();
     }
 
     private void showMessagesPage() {
-        clearContent(PAGE_MESSAGES, "Nachrichten", "Eigene Ansicht. Gespräche sind kompakt gruppiert. Aktionen wirken auf die Unterhaltung.");
-        row(content, nav("Neu laden", v -> showMessagesPage()), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showMessagesPage(); }));
-        loadMessagesIntoContent();
+        clearPage(PAGE_MESSAGES, "Nachrichten", "Eigene Seite. Gespräche sind kompakt gruppiert. Aktionen wirken auf die Unterhaltung.");
+        LinearLayout p = activePanel();
+        row(p, nav("Neu laden", v -> showMessagesPage()), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showMessagesPage(); }));
+        TextView summary = label("Lade Nachrichten...", 13, true, Color.rgb(240, 235, 226));
+        p.addView(summary, card(8));
+        LinearLayout list = vertical();
+        p.addView(list);
+        loadMessages(summary, list);
     }
 
-    private void loadMessagesIntoContent() {
-        TextView summary = label("Lade Nachrichten...", 13, true, Color.rgb(240, 235, 226));
-        content.addView(summary, card(8));
-        LinearLayout list = vertical();
-        content.addView(list);
+    private void loadMessages(TextView summary, LinearLayout list) {
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
@@ -235,8 +248,8 @@ public final class MainActivity extends Activity {
             LinearLayout card = miniCard();
             card.addView(label((i + 1) + ". [" + item.optString("priority_band", "P?") + "] " + sender, 15, true, Color.WHITE));
             card.addView(label(item.optString("suggested_action", "pruefen"), 11, true, orange()));
-            card.addView(label(cut(preview, 260), 13, false, Color.rgb(232, 226, 216)));
-            row(card, nav("Wichtig", v -> decide(eventId, "very_important")), nav("Erledigt", v -> decide(eventId, "done")));
+            card.addView(label(cut(preview, 250), 13, false, Color.rgb(232, 226, 216)));
+            row(card, nav("Sehr wichtig", v -> decide(eventId, "very_important")), nav("Erledigt", v -> decide(eventId, "done")));
             row(card, nav("Zeitstrahl", v -> decide(eventId, "timeline_focus")), nav("Chef-Kontext", v -> putContext(sender, preview)));
             list.addView(card, card(8));
         }
@@ -250,8 +263,9 @@ public final class MainActivity extends Activity {
     }
 
     private void decide(String eventId, String action) {
-        TextView info = label("Sende Aktion: " + action + "...", 12, true, orange());
-        content.addView(info, card(6));
+        if (eventId == null || eventId.isEmpty()) return;
+        TextView info = logBox("Sende Aktion: " + action + "...");
+        activePanel().addView(info, card(6));
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
@@ -272,12 +286,13 @@ public final class MainActivity extends Activity {
     }
 
     private void showFilesPage() {
-        clearContent(PAGE_FILES, "Dateien", "Ordner aus Nexus. Kein Roh-JSON mehr.");
-        row(content, nav("Neu laden", v -> showFilesPage()), nav("Web-Dateien", v -> showWebPage("/files")));
+        clearPage(PAGE_FILES, "Dateien", "Ordner aus Nexus. Kein Roh-JSON.");
+        LinearLayout p = activePanel();
+        row(p, nav("Neu laden", v -> showFilesPage()), nav("Web-Dateien", v -> showWebPage("/files")));
         TextView info = label("Lade Ordner...", 13, true, Color.rgb(240, 235, 226));
-        content.addView(info, card(8));
+        p.addView(info, card(8));
         LinearLayout list = vertical();
-        content.addView(list);
+        p.addView(list);
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
@@ -315,32 +330,35 @@ public final class MainActivity extends Activity {
     }
 
     private void showTimelinePage() {
-        clearContent(PAGE_TIMELINE, "Zeitstrahl", "Chronik und Entscheidungen. Erledigt bleibt sichtbar, aber markiert.");
-        row(content, nav("Neu laden", v -> showTimelinePage()), nav("Web-Zeitstrahl", v -> showWebPage("/timeline")));
+        clearPage(PAGE_TIMELINE, "Zeitstrahl", "Chronik und Entscheidungen. Erledigt bleibt sichtbar, aber markiert.");
+        LinearLayout p = activePanel();
+        row(p, nav("Neu laden", v -> showTimelinePage()), nav("Web-Zeitstrahl", v -> showWebPage("/timeline")));
         loadTextEndpoint("Zeitstrahl", "/api/timeline?limit=80");
     }
 
     private void showCollectorPage() {
-        clearContent(PAGE_COLLECTOR, "Collector", "Server, Rechte, Testevent und Outbox. Diese Seite ist isoliert.");
+        clearPage(PAGE_COLLECTOR, "Collector", "Server, Rechte, Testevent und Outbox.");
+        LinearLayout p = activePanel();
         Switch sw = new Switch(this);
         sw.setText("Collector aktiv");
         sw.setTextColor(Color.WHITE);
         sw.setChecked(NexusConfig.enabled(this));
-        sw.setOnCheckedChangeListener((button, checked) -> { NexusConfig.setEnabled(this, checked); refreshStatus(); });
-        content.addView(sw, card(8));
+        sw.setOnCheckedChangeListener((button, checked) -> NexusConfig.setEnabled(this, checked));
+        p.addView(sw, card(8));
         endpointInput = input("http://192.168.1.216:8081", true);
         endpointInput.setText(NexusConfig.baseUrl(this));
-        content.addView(endpointInput, card(8));
-        row(content, nav("Server speichern", v -> { NexusConfig.setEndpoint(this, endpointInput.getText().toString()); refreshStatus(); }), nav("Verbindung testen", v -> testConnection()));
-        row(content, nav("LAN 192.168", v -> { endpointInput.setText("http://192.168.1.216:8081"); NexusConfig.setEndpoint(this, endpointInput.getText().toString()); refreshStatus(); }), nav("Tailscale 100", v -> { endpointInput.setText("http://100.107.24.67:8081"); NexusConfig.setEndpoint(this, endpointInput.getText().toString()); refreshStatus(); }));
-        row(content, nav("Nachrichtenrecht", v -> openNotificationAccess()), nav("SMS-Recht", v -> requestSms()));
-        row(content, nav("Testevent", v -> sendTestEvent()), nav("Outbox senden", v -> { NexusEventSender.retryOutbox(this); refreshStatus(); }));
+        p.addView(endpointInput, card(8));
+        row(p, nav("Server speichern", v -> NexusConfig.setEndpoint(this, endpointInput.getText().toString())), nav("Verbindung testen", v -> testConnection()));
+        row(p, nav("LAN 192.168", v -> { endpointInput.setText("http://192.168.1.216:8081"); NexusConfig.setEndpoint(this, endpointInput.getText().toString()); }), nav("Tailscale 100", v -> { endpointInput.setText("http://100.107.24.67:8081"); NexusConfig.setEndpoint(this, endpointInput.getText().toString()); }));
+        row(p, nav("Nachrichtenrecht", v -> openNotificationAccess()), nav("SMS-Recht", v -> requestSms()));
+        row(p, nav("Testevent", v -> sendTestEvent()), nav("Outbox senden", v -> NexusEventSender.retryOutbox(this)));
     }
 
     private void showWebPage(String path) {
-        clearContent(PAGE_WEB, "Nexus Web", "Bestehendes Web-Cockpit innerhalb der App.");
-        row(content, nav("Cockpit", v -> loadWeb("/")), nav("Kommunikation", v -> loadWeb("/communication")));
-        row(content, nav("Dateien", v -> loadWeb("/files")), nav("Chef", v -> loadWeb("/chef")));
+        clearPage(PAGE_WEB, "Nexus Web", "Bestehendes Web-Cockpit innerhalb der App.");
+        LinearLayout p = activePanel();
+        row(p, nav("Cockpit", v -> loadWeb("/")), nav("Kommunikation", v -> loadWeb("/communication")));
+        row(p, nav("Dateien", v -> loadWeb("/files")), nav("Chef", v -> loadWeb("/chef")));
         webView = new WebView(this);
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
@@ -348,28 +366,25 @@ public final class MainActivity extends Activity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         webView.setWebViewClient(new WebViewClient());
-        content.addView(webView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(680)));
+        p.addView(webView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(680)));
         loadWeb(path);
     }
 
     private void loadWeb(String path) {
         if (webView == null) return;
-        if (path == null || path.isEmpty()) path = "/";
-        webView.loadUrl(NexusConfig.baseUrl(this) + path);
+        webView.loadUrl(NexusConfig.baseUrl(this) + (path == null || path.isEmpty() ? "/" : path));
     }
 
     private void loadTextEndpoint(String title, String path) {
-        TextView output = label("Lade " + title + "...", 13, false, Color.rgb(226, 220, 212));
-        output.setPadding(dp(10), dp(10), dp(10), dp(10));
-        output.setBackground(box(14, Color.rgb(8, 9, 9), Color.rgb(58, 42, 30)));
-        content.addView(output, card(8));
+        TextView output = logBox("Lade " + title + "...");
+        activePanel().addView(output, card(8));
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
                 try {
                     String body = httpGet(base + path);
                     NexusConfig.rememberWorkingBaseUrl(this, base);
-                    runOnUiThread(() -> { if (title.equals(contentTitle.getText().toString())) output.setText("Quelle: " + host(base) + "\n" + cut(body, 2600)); });
+                    runOnUiThread(() -> output.setText("Quelle: " + host(base) + "\n" + cut(body, 2600)));
                     return;
                 } catch (Exception ex) { last = host(base) + ": " + ex.getClass().getSimpleName(); }
             }
@@ -403,13 +418,13 @@ public final class MainActivity extends Activity {
         StringBuilder sb = new StringBuilder();
         boolean tokenErrorShown = false;
         int shown = 0;
-        for (int i = Math.max(0, items.length() - 12); i < items.length(); i++) {
+        for (int i = Math.max(0, items.length() - 14); i < items.length(); i++) {
             JSONObject it = items.optJSONObject(i);
             if (it == null) continue;
             String text = cut(it.optString("text", it.optString("content", "")), 420);
             if (text.toLowerCase().contains("max_output_tokens")) {
                 if (!tokenErrorShown) {
-                    sb.append("SYSTEM: Chef-Antwort wurde vom Server wegen max_output_tokens abgeschnitten. Das ist ein Server-/Responses-Limit, kein Chatinhalt.\n\n");
+                    sb.append("SYSTEM: Chef-Antwort vom Server wegen max_output_tokens abgeschnitten. Serverlimit muss im Nexus-Core korrigiert werden.\n\n");
                     tokenErrorShown = true;
                     shown++;
                 }
@@ -433,24 +448,24 @@ public final class MainActivity extends Activity {
                     JSONObject res = new JSONObject(httpPost(base + "/api/mobile/chef-chat", "prompt=" + enc(prompt)));
                     if (res.optBoolean("ok", false)) {
                         NexusConfig.rememberWorkingBaseUrl(this, base);
-                        runOnUiThread(() -> { if (chefInput != null) chefInput.setText(""); if (chefLog != null) chefLog.setText(res.optString("message", "Chef-Auftrag gesendet.")); loadChefLog(); });
+                        runOnUiThread(() -> { chefInput.setText(""); chefLog.setText(res.optString("message", "Chef-Auftrag gesendet.")); loadChefLog(); });
                         return;
                     }
                     last = host(base) + ": " + res.optString("message", "ok=false");
                 } catch (Exception ex) { last = host(base) + ": " + ex.getClass().getSimpleName(); }
             }
             final String err = last;
-            runOnUiThread(() -> { if (chefLog != null) chefLog.setText("Chef-Chat fehlgeschlagen: " + err); });
+            runOnUiThread(() -> chefLog.setText("Chef-Chat fehlgeschlagen: " + err));
         }).start();
     }
 
-    private void refreshStatus() {
-        if (accessText != null) accessText.setText("Server: " + NexusConfig.baseUrl(this) + "\nNachrichtenrecht: " + (notificationAccess() ? "aktiv" : "fehlt") + " | SMS: " + (smsPermission() ? "aktiv" : "fehlt") + "\nBei Fehler: Verbindung testen oder Collector oeffnen.");
-        if (statusText != null) statusText.setText(status());
+    private String accessText() {
+        return "Server: " + NexusConfig.baseUrl(this) + "\nNachrichtenrecht: " + (notificationAccess() ? "aktiv" : "fehlt") + " | SMS: " + (smsPermission() ? "aktiv" : "fehlt") + "\nBei Fehler: Collector oeffnen und Verbindung testen.";
     }
 
     private void testConnection() {
-        if (accessText != null) accessText.setText("Teste Nexus-Verbindung...");
+        TextView out = logBox("Teste Nexus-Verbindung...");
+        activePanel().addView(out, card(6));
         new Thread(() -> {
             StringBuilder failures = new StringBuilder();
             for (String base : NexusConfig.baseUrlCandidates(this)) {
@@ -458,14 +473,14 @@ public final class MainActivity extends Activity {
                     httpGet(base + "/api/widget/messages?limit=1");
                     NexusConfig.rememberWorkingBaseUrl(this, base);
                     String ok = "OK: " + host(base) + "\nNachrichtenrecht: " + (notificationAccess() ? "aktiv" : "fehlt") + " | SMS: " + (smsPermission() ? "aktiv" : "fehlt");
-                    runOnUiThread(() -> { if (accessText != null) accessText.setText(ok); refreshStatus(); if (PAGE_HOME.equals(currentPage)) showHome(); });
+                    runOnUiThread(() -> out.setText(ok));
                     return;
                 } catch (Exception ex) {
                     failures.append(host(base)).append(": ").append(ex.getClass().getSimpleName()).append(" ").append(cut(ex.getMessage(), 80)).append('\n');
                 }
             }
-            String msg = "Keine Nexus-Verbindung.\n" + failures.toString().trim() + "\nPruefe: Handy im gleichen WLAN oder Tailscale aktiv, Windows-Firewall Port 8081 offen.";
-            runOnUiThread(() -> { if (accessText != null) accessText.setText(msg); });
+            String msg = "Keine Nexus-Verbindung.\n" + failures.toString().trim() + "\nPruefe WLAN/Tailscale und Windows Port 8081.";
+            runOnUiThread(() -> out.setText(msg));
         }).start();
     }
 
@@ -481,7 +496,7 @@ public final class MainActivity extends Activity {
     }
 
     private boolean smsPermission() { return checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED; }
-    private void requestSms() { if (!smsPermission()) requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS}, 1001); refreshStatus(); }
+    private void requestSms() { if (!smsPermission()) requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS}, 1001); }
     private boolean notificationAccess() { String enabled = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners"); return enabled != null && enabled.toLowerCase().contains(getPackageName().toLowerCase()); }
     private void openNotificationAccess() { startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); }
 
@@ -494,7 +509,6 @@ public final class MainActivity extends Activity {
             visual.put("has_attachment_hint", false);
             event.put("visual", visual);
             NexusEventSender.sendAsync(this, event.toString());
-            refreshStatus();
         } catch (Exception ignored) {}
     }
 
@@ -510,12 +524,19 @@ public final class MainActivity extends Activity {
         return e;
     }
 
+    private TextView logBox(String text) {
+        TextView v = label(text, 13, false, Color.rgb(232, 226, 218));
+        v.setPadding(dp(10), dp(10), dp(10), dp(10));
+        v.setBackground(box(14, Color.rgb(8, 9, 9), Color.rgb(58, 42, 30)));
+        return v;
+    }
+
     private LinearLayout vertical() { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); return l; }
     private LinearLayout panel() { LinearLayout l = vertical(); l.setPadding(dp(10), dp(10), dp(10), dp(10)); l.setBackground(box(18, Color.rgb(18, 19, 17), Color.rgb(72, 47, 31))); l.setElevation(dp(7)); return l; }
     private LinearLayout miniCard() { LinearLayout l = vertical(); l.setPadding(dp(9), dp(8), dp(9), dp(8)); l.setBackground(box(15, Color.rgb(11, 12, 11), Color.rgb(72, 47, 31))); l.setElevation(dp(3)); return l; }
     private TextView section(String s) { return label(s, 12, true, orange()); }
     private TextView label(String s, int sp, boolean bold, int color) { TextView v = new TextView(this); v.setText(s); v.setTextSize(sp); v.setTextColor(color); v.setGravity(Gravity.START); v.setPadding(0, dp(4), 0, dp(5)); if (bold) v.setTypeface(Typeface.DEFAULT_BOLD); return v; }
-    private Button nav(String s, View.OnClickListener l) { Button b = new Button(this); b.setText(s); b.setAllCaps(false); b.setTextSize(10); b.setTypeface(Typeface.DEFAULT_BOLD); b.setTextColor(Color.rgb(18, 13, 8)); b.setMinHeight(dp(28)); b.setMinimumHeight(0); b.setPadding(dp(4), 0, dp(4), 0); b.setBackground(box(12, Color.rgb(255, 158, 38), Color.rgb(255, 180, 58))); b.setOnClickListener(l); return b; }
+    private Button nav(String s, View.OnClickListener l) { Button b = new Button(this); b.setText(s); b.setAllCaps(false); b.setTextSize(10); b.setTypeface(Typeface.DEFAULT_BOLD); b.setTextColor(Color.rgb(18, 13, 8)); b.setMinHeight(dp(30)); b.setMinimumHeight(0); b.setPadding(dp(4), 0, dp(4), 0); b.setBackground(box(12, Color.rgb(255, 158, 38), Color.rgb(255, 180, 58))); b.setOnClickListener(l); return b; }
     private void row(LinearLayout parent, Button a, Button b) { LinearLayout r = new LinearLayout(this); r.setOrientation(LinearLayout.HORIZONTAL); LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f); lp.setMargins(0, dp(4), dp(4), 0); LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f); rp.setMargins(dp(4), dp(4), 0, 0); r.addView(a, lp); r.addView(b, rp); parent.addView(r); }
     private LinearLayout.LayoutParams card(int top) { LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(0, dp(top), 0, 0); return lp; }
     private GradientDrawable box(int radius, int fill, int stroke) { GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{fill, Color.rgb(4, 5, 5)}); d.setCornerRadius(dp(radius)); d.setStroke(dp(1), stroke); return d; }
