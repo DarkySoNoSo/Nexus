@@ -37,6 +37,7 @@ public final class MainActivity extends Activity {
     private LinearLayout root;
     private LinearLayout messageList;
     private LinearLayout page;
+    private TextView accessText;
     private TextView messageSummary;
     private TextView chefLog;
     private TextView pageTitle;
@@ -73,9 +74,17 @@ public final class MainActivity extends Activity {
         scroll.addView(root);
 
         LinearLayout head = panel();
-        head.addView(label("NEXUS MOBILE", 24, true, Color.WHITE));
+        head.addView(label("NEXUS CHEF NATIVE", 24, true, Color.WHITE));
         head.addView(label("Chef, Kommunikation, Dateien und Widget in einer nativen App.", 12, false, sub()));
         root.addView(head, card(0));
+
+        LinearLayout access = panel();
+        access.addView(section("ZUGAENGE"));
+        accessText = label("Pruefe Zugriffe...", 13, true, Color.rgb(240, 235, 226));
+        access.addView(accessText);
+        row(access, nav("Verbindung testen", v -> testConnection()), nav("Server / Rechte", v -> showCollector()));
+        row(access, nav("Nachrichtenrecht", v -> openNotificationAccess()), nav("SMS-Recht", v -> requestSms()));
+        root.addView(access, card(8));
 
         LinearLayout menu = panel();
         menu.addView(section("MENUE"));
@@ -86,15 +95,9 @@ public final class MainActivity extends Activity {
 
         LinearLayout chat = panel();
         chat.addView(section("CHEF-KANAL"));
-        chefInput = new EditText(this);
+        chefInput = input("Dem Chef Kontext, Frage oder Auftrag schreiben...", false);
         chefInput.setMinLines(2);
         chefInput.setMaxLines(5);
-        chefInput.setTextColor(Color.WHITE);
-        chefInput.setHintTextColor(Color.rgb(130, 135, 142));
-        chefInput.setHint("Dem Chef Kontext, Frage oder Auftrag schreiben...");
-        chefInput.setTextSize(13);
-        chefInput.setPadding(dp(11), dp(8), dp(11), dp(8));
-        chefInput.setBackground(box(14, Color.rgb(13, 14, 14), Color.rgb(52, 37, 27)));
         chat.addView(chefInput, card(6));
         row(chat, nav("An Chef senden", v -> sendChef()), nav("Chef laden", v -> loadChefLog()));
         chefLog = label("Chef-Kanal wird geladen...", 13, false, Color.rgb(232, 226, 218));
@@ -126,6 +129,35 @@ public final class MainActivity extends Activity {
         status.addView(statusText);
         root.addView(status, card(8));
         return scroll;
+    }
+
+    private void refreshStatus() {
+        refreshAccessText("Server: " + NexusConfig.baseUrl(this) + "\nNachrichtenrecht: " + (notificationAccess() ? "aktiv" : "fehlt") + " | SMS: " + (smsPermission() ? "aktiv" : "fehlt") + "\nBei Fehler: Verbindung testen oder Server / Rechte oeffnen.");
+        if (statusText != null) statusText.setText(status());
+    }
+
+    private void refreshAccessText(String text) {
+        if (accessText != null) accessText.setText(text == null ? "" : text);
+    }
+
+    private void testConnection() {
+        refreshAccessText("Teste Nexus-Verbindung...");
+        new Thread(() -> {
+            StringBuilder failures = new StringBuilder();
+            for (String base : NexusConfig.baseUrlCandidates(this)) {
+                try {
+                    httpGet(base + "/api/widget/messages?limit=1");
+                    NexusConfig.rememberWorkingBaseUrl(this, base);
+                    String ok = "OK: " + host(base) + "\nNachrichtenrecht: " + (notificationAccess() ? "aktiv" : "fehlt") + " | SMS: " + (smsPermission() ? "aktiv" : "fehlt");
+                    runOnUiThread(() -> { refreshAccessText(ok); refreshStatus(); loadMessages(); loadChefLog(); });
+                    return;
+                } catch (Exception ex) {
+                    failures.append(host(base)).append(": ").append(ex.getClass().getSimpleName()).append(" ").append(cut(ex.getMessage(), 80)).append('\n');
+                }
+            }
+            String msg = "Keine Nexus-Verbindung.\n" + failures.toString().trim() + "\nPruefe: Handy im gleichen WLAN oder Tailscale aktiv, Windows-Firewall Port 8081 offen.";
+            runOnUiThread(() -> refreshAccessText(msg));
+        }).start();
     }
 
     private void focusChef() {
@@ -171,8 +203,8 @@ public final class MainActivity extends Activity {
             card.addView(label((i + 1) + ". [" + item.optString("priority_band", "P?") + "] " + sender, 15, true, Color.WHITE));
             card.addView(label(item.optString("suggested_action", "pruefen"), 11, true, orange()));
             card.addView(label(cut(preview, 240), 13, false, Color.rgb(232, 226, 216)));
-            row(card, nav("Wichtig", v -> decide(eventId, "very_important")), nav("OK", v -> decide(eventId, "done")));
-            row(card, nav("Fokus", v -> decide(eventId, "timeline_focus")), nav("Chef", v -> putContext(sender, preview)));
+            row(card, nav("Sehr wichtig", v -> decide(eventId, "very_important")), nav("Erledigt", v -> decide(eventId, "done")));
+            row(card, nav("Zeitstrahl", v -> decide(eventId, "timeline_focus")), nav("Chef", v -> putContext(sender, preview)));
             messageList.addView(card, card(8));
         }
     }
@@ -285,8 +317,8 @@ public final class MainActivity extends Activity {
     }
 
     private void showCollector() {
-        pageTitle.setText("Collector");
-        pageBody.setText("SMS, Gmail und Messenger-Benachrichtigungen werden als Events an Nexus gesendet.");
+        pageTitle.setText("Server / Rechte");
+        pageBody.setText("Hier stellst du den Nexus-Zugang ein. Nutze zuerst Verbindung testen. Wenn Nachrichtenrecht oder SMS fehlen, die Buttons oben oder hier oeffnen.");
         clearPageExtras();
         Switch sw = new Switch(this);
         sw.setText("Collector aktiv");
@@ -294,17 +326,13 @@ public final class MainActivity extends Activity {
         sw.setChecked(NexusConfig.enabled(this));
         sw.setOnCheckedChangeListener((button, checked) -> { NexusConfig.setEnabled(this, checked); refreshStatus(); });
         page.addView(sw, card(8));
-        endpointInput = new EditText(this);
-        endpointInput.setSingleLine(true);
+        endpointInput = input("http://192.168.1.216:8081", true);
         endpointInput.setText(NexusConfig.endpoint(this));
-        endpointInput.setTextColor(Color.WHITE);
-        endpointInput.setTextSize(12);
-        endpointInput.setBackground(box(14, Color.rgb(13, 14, 14), Color.rgb(52, 37, 27)));
-        endpointInput.setPadding(dp(10), dp(8), dp(10), dp(8));
         page.addView(endpointInput, card(8));
-        row(page, nav("Speichern", v -> { NexusConfig.setEndpoint(this, endpointInput.getText().toString()); refreshStatus(); }), nav("Outbox senden", v -> { NexusEventSender.retryOutbox(this); refreshStatus(); }));
-        row(page, nav("Nachrichtenrecht", v -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))), nav("SMS-Recht", v -> requestSms()));
-        row(page, nav("Testevent", v -> sendTestEvent()), nav("Status", v -> refreshStatus()));
+        row(page, nav("Server speichern", v -> { NexusConfig.setEndpoint(this, endpointInput.getText().toString()); refreshStatus(); }), nav("Verbindung testen", v -> testConnection()));
+        row(page, nav("LAN 192.168", v -> { endpointInput.setText("http://192.168.1.216:8081"); NexusConfig.setEndpoint(this, endpointInput.getText().toString()); refreshStatus(); }), nav("Tailscale 100", v -> { endpointInput.setText("http://100.107.24.67:8081"); NexusConfig.setEndpoint(this, endpointInput.getText().toString()); refreshStatus(); }));
+        row(page, nav("Nachrichtenrecht", v -> openNotificationAccess()), nav("SMS-Recht", v -> requestSms()));
+        row(page, nav("Testevent", v -> sendTestEvent()), nav("Outbox senden", v -> { NexusEventSender.retryOutbox(this); refreshStatus(); }));
     }
 
     private void showWeb(String path) {
@@ -332,8 +360,6 @@ public final class MainActivity extends Activity {
 
     private void clearPageExtras() { while (page.getChildCount() > 2) page.removeViewAt(2); webView = null; }
 
-    private void refreshStatus() { if (statusText != null) statusText.setText(status()); }
-
     private String status() {
         return "Aktiv: " + (NexusConfig.enabled(this) ? "ja" : "nein") + "\n"
                 + "Notification-Zugriff: " + (notificationAccess() ? "ja" : "nein") + "\n"
@@ -346,8 +372,9 @@ public final class MainActivity extends Activity {
     }
 
     private boolean smsPermission() { return checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED; }
-    private void requestSms() { if (!smsPermission()) requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS}, 1001); }
+    private void requestSms() { if (!smsPermission()) requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS}, 1001); refreshStatus(); }
     private boolean notificationAccess() { String enabled = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners"); return enabled != null && enabled.toLowerCase().contains(getPackageName().toLowerCase()); }
+    private void openNotificationAccess() { startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); }
 
     private void sendTestEvent() {
         try {
@@ -360,6 +387,18 @@ public final class MainActivity extends Activity {
             NexusEventSender.sendAsync(this, event.toString());
             refreshStatus();
         } catch (Exception ignored) {}
+    }
+
+    private EditText input(String hint, boolean singleLine) {
+        EditText e = new EditText(this);
+        e.setSingleLine(singleLine);
+        e.setTextColor(Color.WHITE);
+        e.setHintTextColor(Color.rgb(130, 135, 142));
+        e.setHint(hint);
+        e.setTextSize(13);
+        e.setPadding(dp(11), dp(8), dp(11), dp(8));
+        e.setBackground(box(14, Color.rgb(13, 14, 14), Color.rgb(52, 37, 27)));
+        return e;
     }
 
     private LinearLayout vertical() { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); return l; }
