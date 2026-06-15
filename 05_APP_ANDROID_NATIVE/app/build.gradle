@@ -1,0 +1,23 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.nexus.collector"
+    compileSdk 35
+
+    signingConfigs {
+        debug {
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+
+    defaultConfig {
+        applicationId "com.nexus.collector"
+        minSdk 23
+        targetSdk 35
+        versionCode 15
+        versionName "1.5.4"
+    }
+}
