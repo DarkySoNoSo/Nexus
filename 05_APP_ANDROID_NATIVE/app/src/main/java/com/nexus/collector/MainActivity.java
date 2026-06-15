@@ -32,6 +32,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class MainActivity extends Activity {
     private static final String PAGE_HOME = "home";
@@ -182,8 +184,8 @@ public final class MainActivity extends Activity {
         for (int i = 0; i < items.length() && shown < 5; i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null || isHidden(item.optString("event_id", ""))) continue;
-            sb.append(shown + 1).append(". ").append(item.optString("sender", "Unbekannt")).append(" - ")
-                    .append(cut(item.optString("body_preview", item.optString("body", "")), 120)).append('\n');
+            sb.append(shown + 1).append(". ").append(senderOf(item)).append(" - ")
+                    .append(cut(previewOf(item), 120)).append('\n');
             shown++;
         }
         return sb.toString().trim();
@@ -203,7 +205,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showMessagesPage() {
-        clearPage(PAGE_MESSAGES, "Nachrichten", "Eigene Seite. Suche findet auch Eintraege, die nicht in den ersten Fokus-Karten stehen.");
+        clearPage(PAGE_MESSAGES, "Nachrichten", "Eigene Seite. Suche liest Gespraeche und bei Suchwort auch Roh-Events.");
         LinearLayout p = activePanel();
         messageSearch = input("Suchen, z.B. Inkasso, PayPal, Person, Betrag...", true);
         p.addView(messageSearch, card(8));
@@ -221,16 +223,35 @@ public final class MainActivity extends Activity {
     }
 
     private void loadMessages(TextView summary, LinearLayout list, String filter) {
+        final String needle = filter == null ? "" : filter.trim().toLowerCase();
         summary.setText("Lade Nachrichten...");
         list.removeAllViews();
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
                 try {
-                    JSONObject json = new JSONObject(httpGet(base + "/api/widget/messages?limit=120"));
-                    if (!json.optBoolean("ok", false)) { last = host(base) + ": ok=false"; continue; }
+                    JSONObject conversations;
+                    try {
+                        conversations = new JSONObject(httpGet(base + "/api/communication/conversations?limit=200"));
+                    } catch (Exception convEx) {
+                        conversations = new JSONObject(httpGet(base + "/api/widget/messages?limit=20"));
+                        conversations.put("_fallback", "widget");
+                    }
+                    if (!conversations.optBoolean("ok", false)) { last = host(base) + ": ok=false"; continue; }
+
+                    JSONObject events = null;
+                    if (!needle.isEmpty()) {
+                        try {
+                            events = new JSONObject(httpGet(base + "/api/communication/events?limit=2000"));
+                        } catch (Exception ignored) {
+                            events = null;
+                        }
+                    }
+
                     NexusConfig.rememberWorkingBaseUrl(this, base);
-                    runOnUiThread(() -> renderMessages(summary, list, json, base, filter));
+                    final JSONObject convFinal = conversations;
+                    final JSONObject eventsFinal = events;
+                    runOnUiThread(() -> renderMessages(summary, list, convFinal, eventsFinal, base, needle));
                     return;
                 } catch (Exception ex) { last = host(base) + ": " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 70); }
             }
@@ -239,48 +260,110 @@ public final class MainActivity extends Activity {
         }).start();
     }
 
-    private void renderMessages(TextView summary, LinearLayout list, JSONObject root, String base, String filter) {
+    private void renderMessages(TextView summary, LinearLayout list, JSONObject conversationsRoot, JSONObject eventsRoot, String base, String needle) {
         if (!PAGE_MESSAGES.equals(currentPage)) return;
-        String needle = filter == null ? "" : filter.trim().toLowerCase();
-        JSONObject c = root.optJSONObject("counters");
-        int focus = c == null ? 0 : c.optInt("focus", 0);
-        int alarm = c == null ? 0 : c.optInt("alerts", 0);
-        int reply = c == null ? 0 : c.optInt("needs_reply", 0);
-        JSONArray items = root.optJSONArray("items");
         list.removeAllViews();
-        if (items == null || items.length() == 0) {
-            summary.setText("Quelle: " + host(base) + "\nKeine Nachrichten vom Server erhalten.");
-            return;
-        }
+        Set<String> seen = new HashSet<>();
+        JSONArray conversations = itemsArray(conversationsRoot);
+        JSONArray events = eventsRoot == null ? null : itemsArray(eventsRoot);
         int shown = 0;
-        for (int i = 0; i < items.length() && shown < 40; i++) {
+        int loaded = (conversations == null ? 0 : conversations.length()) + (events == null ? 0 : events.length());
+        if (conversations != null) shown += renderMessageItems(list, conversations, needle, seen, shown, 70);
+        if (events != null) shown += renderMessageItems(list, events, needle, seen, shown, 70);
+
+        String source = "Quelle: " + host(base);
+        String basis = conversationsRoot.optString("_fallback", "").equals("widget")
+                ? "Basis: Widget-Fallback 20"
+                : "Basis: Gespraeche 200" + (events == null ? "" : " + Events 2000");
+        String filterText = needle == null || needle.isEmpty() ? "" : " | Suche: " + needle;
+        summary.setText(source + "\n" + basis + "\nGeladen: " + loaded + " | Sichtbar: " + shown + filterText);
+        if (shown == 0) list.addView(logBox("Keine Treffer. Suchwort vereinfachen oder im Web pruefen, ob der Server diese Nachricht bereits aufgenommen hat."));
+    }
+
+    private JSONArray itemsArray(JSONObject root) {
+        if (root == null) return null;
+        JSONArray items = root.optJSONArray("items");
+        if (items != null) return items;
+        JSONObject data = root.optJSONObject("data");
+        return data == null ? null : data.optJSONArray("items");
+    }
+
+    private int renderMessageItems(LinearLayout list, JSONArray items, String needle, Set<String> seen, int start, int maxTotal) {
+        int added = 0;
+        for (int i = 0; i < items.length() && start + added < maxTotal; i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
-            String eventId = item.optString("event_id", "");
-            if (isHidden(eventId)) continue;
-            String sender = item.optString("sender", "Unbekannt");
-            String preview = item.optString("body_preview", item.optString("body", ""));
-            String action = item.optString("suggested_action", "pruefen");
-            String hay = (sender + " " + preview + " " + action + " " + item.optString("source", "")).toLowerCase();
-            if (!needle.isEmpty() && !hay.contains(needle)) continue;
+            String eventId = item.optString("event_id", item.optString("conversation_key", ""));
+            if (eventId.isEmpty()) eventId = item.optString("id", "");
+            String unique = eventId.isEmpty() ? senderOf(item) + "|" + previewOf(item) : eventId;
+            if (seen.contains(unique) || isHidden(eventId)) continue;
+            if (!matchesMessage(item, needle)) continue;
+            seen.add(unique);
 
+            final String finalEventId = eventId;
+            final String finalSender = senderOf(item);
+            final String finalPreview = previewOf(item);
             LinearLayout card = miniCard();
-            card.addView(label((shown + 1) + ". [" + item.optString("priority_band", "P?") + "] " + sender, 15, true, Color.WHITE));
-            card.addView(label(action, 11, true, orange()));
-            card.addView(label(cut(preview, 270), 13, false, Color.rgb(232, 226, 216)));
-            row(card, nav("Sehr wichtig", v -> decide(eventId, "very_important")), nav("Erledigt", v -> decide(eventId, "done")));
-            row(card, nav("Zeitstrahl", v -> decide(eventId, "timeline_focus")), nav("Chef-Kontext", v -> putContext(sender, preview)));
+            card.addView(label((start + added + 1) + ". [" + priorityOf(item) + "] " + finalSender, 15, true, Color.WHITE));
+            card.addView(label(actionOf(item), 11, true, orange()));
+            card.addView(label(cut(finalPreview, 310), 13, false, Color.rgb(232, 226, 216)));
+            row(card, nav("Sehr wichtig", v -> decide(finalEventId, "very_important")), nav("Erledigt", v -> decide(finalEventId, "done")));
+            row(card, nav("Zeitstrahl", v -> decide(finalEventId, "timeline_focus")), nav("Chef-Kontext", v -> putContext(finalSender, finalPreview)));
             list.addView(card, card(8));
-            shown++;
+            added++;
         }
-        String filterText = needle.isEmpty() ? "" : " | Suche: " + needle;
-        summary.setText("Quelle: " + host(base) + "\nGeladen: " + items.length() + " | Sichtbar: " + shown + filterText + "\nFokus: " + focus + " | Alarm: " + alarm + " | Antwort: " + reply);
-        if (shown == 0) list.addView(logBox("Keine Treffer. Wenn du etwas erwartest: Suchwort vereinfachen oder im Web pruefen, ob der Server es liefert."));
+        return added;
+    }
+
+    private boolean matchesMessage(JSONObject item, String needle) {
+        if (needle == null || needle.trim().isEmpty()) return true;
+        StringBuilder hay = new StringBuilder();
+        hay.append(senderOf(item)).append(' ').append(previewOf(item)).append(' ').append(actionOf(item)).append(' ');
+        hay.append(item.optString("source", "")).append(' ').append(item.optString("channel_type", "")).append(' ');
+        hay.append(item.optString("title", "")).append(' ').append(item.optString("sender_raw", "")).append(' ');
+        JSONObject sem = item.optJSONObject("semantic");
+        if (sem != null) hay.append(sem.optString("category", "")).append(' ');
+        JSONObject chef = item.optJSONObject("chef_assessment");
+        if (chef != null) hay.append(chef.optString("domain", "")).append(' ').append(chef.optString("suggested_action", ""));
+        return hay.toString().toLowerCase().contains(needle.toLowerCase());
+    }
+
+    private String senderOf(JSONObject item) {
+        String s = item.optString("sender", "");
+        if (s.isEmpty()) s = item.optString("sender_raw", "");
+        if (s.isEmpty()) s = item.optString("title", "");
+        if (s.isEmpty()) s = item.optString("source", "");
+        return s.isEmpty() ? "Unbekannt" : s;
+    }
+
+    private String previewOf(JSONObject item) {
+        String p = item.optString("body_preview", "");
+        if (p.isEmpty()) p = item.optString("body", "");
+        if (p.isEmpty()) p = item.optString("title", "");
+        return p;
+    }
+
+    private String actionOf(JSONObject item) {
+        String a = item.optString("suggested_action", "");
+        if (a.isEmpty()) {
+            JSONObject chef = item.optJSONObject("chef_assessment");
+            if (chef != null) a = chef.optString("suggested_action", "");
+        }
+        return a.isEmpty() ? "pruefen" : a;
+    }
+
+    private String priorityOf(JSONObject item) {
+        String p = item.optString("priority_band", "");
+        if (p.isEmpty()) {
+            JSONObject chef = item.optJSONObject("chef_assessment");
+            if (chef != null) p = chef.optString("priority_band", "");
+        }
+        return p.isEmpty() ? "P?" : p;
     }
 
     private void putContext(String sender, String preview) {
         showChefPage();
-        chefInput.setText("Kontext zu Nachricht von " + sender + ":\n" + cut(preview, 180) + "\n\nMeine Einordnung: ");
+        chefInput.setText("Kontext zu Nachricht von " + sender + ":\n" + cut(preview, 220) + "\n\nMeine Einordnung: ");
         chefInput.requestFocus();
         chefLog.setText("Kontext eintragen und an Chef senden.");
     }
