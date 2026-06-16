@@ -19,3 +19,7 @@ data/*.sqlite
 __pycache__/
 *.pyc
 
+
+docs/nexy/NEXY_LOCAL_BRIEFING.md
+docs/nexy/*LOCAL*.md
+
