@@ -823,7 +823,7 @@ public final class MainActivity extends Activity {
     private int sub() { return Color.rgb(185, 178, 168); }
 
     private String themeName() { return NexusConfig.prefs(this).getString("ui_theme", "orange"); }
-    private void setTheme(String name) { NexusConfig.prefs(this).edit().putString("ui_theme", name == null ? "orange" : name).apply(); showHome(); }
+    private void setTheme(String name) { NexusConfig.prefs(this).edit().putString("ui_theme", name == null ? "orange" : name).apply(); setContentView(buildUi()); }
     private int accentStart() { String t = themeName(); if ("blue".equals(t)) return Color.rgb(0, 192, 255); if ("green".equals(t)) return Color.rgb(0, 255, 102); return Color.rgb(255, 158, 38); }
     private int accentEnd() { String t = themeName(); if ("blue".equals(t)) return Color.rgb(0, 78, 255); if ("green".equals(t)) return Color.rgb(0, 150, 70); return Color.rgb(255, 180, 58); }
     private int accentText() { String t = themeName(); if ("blue".equals(t)) return Color.rgb(0, 192, 255); if ("green".equals(t)) return Color.rgb(0, 255, 102); return Color.rgb(255, 169, 54); }
