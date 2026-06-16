@@ -5,11 +5,9 @@ Native Kivy control surface for Chef, messages, timeline, files handoff,
 collector/offline queue, and connection diagnostics.
 """
 
-import json
 import os
 import threading
 import webbrowser
-from datetime import datetime
 from urllib.parse import urlencode
 
 import requests
@@ -123,8 +121,6 @@ class NexusMobileApp(App):
         self.theme_name = "ORANGE"
         self.theme = THEMES[self.theme_name]
         self.current_page = "home"
-        self.message_items = []
-        self.chef_lines = []
 
         db_path = os.path.join(self.user_data_dir, "nexus_offline.db")
         self.sync_manager = OfflineSyncManager(db_path=db_path, server_url=SERVER_CANDIDATES[0])
@@ -191,7 +187,7 @@ class NexusMobileApp(App):
 
     def _panel(self, title=None, height=None, accent=False):
         panel = Panel(app=self, bg=(0.009, 0.010, 0.011, 1), accent=accent, orientation="vertical",
-                      size_hint_y=None if height else None, padding=dp(9), spacing=dp(7))
+                      size_hint_y=None, padding=dp(9), spacing=dp(7))
         if height:
             panel.height = height
         if title:
@@ -234,7 +230,6 @@ class NexusMobileApp(App):
         self.current_page = page
         self._clear_content()
         self.content.add_widget(self._menu_panel())
-
         if page == "home":
             self.content.add_widget(self._access_panel())
             self.content.add_widget(self._chef_panel(compact=True))
@@ -268,7 +263,6 @@ class NexusMobileApp(App):
         elif page == "status":
             self.content.add_widget(self._back_title("STATUS"))
             self.content.add_widget(self._status_panel())
-
         self.scroll.scroll_y = 1
         self._redraw_all()
 
@@ -381,11 +375,16 @@ class NexusMobileApp(App):
 
     def set_server_url(self, value, update_input=False):
         clean = self.normalize_base(value)
-        self.server_url = clean
-        self.sync_manager.server_url = clean
+        self._remember_server_url(clean)
         if update_input and hasattr(self, "server_input"):
             self.server_input.text = clean
         self.status_label.text = f"Server: {clean}"
+
+    def _remember_server_url(self, value):
+        clean = self.normalize_base(value)
+        self.server_url = clean
+        self.sync_manager.server_url = clean
+        return clean
 
     def normalize_base(self, value):
         clean = (value or "").strip()
@@ -415,7 +414,7 @@ class NexusMobileApp(App):
             try:
                 r = requests.get(base + path, headers=self.headers(), timeout=timeout)
                 if r.status_code == 200:
-                    self.set_server_url(base)
+                    self._remember_server_url(base)
                     return r.json()
                 last = f"{base}: HTTP {r.status_code}"
             except Exception as exc:
@@ -430,7 +429,7 @@ class NexusMobileApp(App):
                 headers["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
                 r = requests.post(base + path, data=urlencode(data).encode("utf-8"), headers=headers, timeout=timeout)
                 if r.status_code == 200:
-                    self.set_server_url(base)
+                    self._remember_server_url(base)
                     try:
                         return r.json()
                     except Exception:
@@ -449,7 +448,7 @@ class NexusMobileApp(App):
                     r = requests.get(base + "/api/widget/messages?limit=1", headers=self.headers(), timeout=5)
                     if r.status_code == 200:
                         ok = True
-                        self.set_server_url(base)
+                        self._remember_server_url(base)
                         break
                     last = f"HTTP {r.status_code}"
                 except Exception as exc:
