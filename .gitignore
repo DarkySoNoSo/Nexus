@@ -23,3 +23,7 @@ __pycache__/
 docs/nexy/NEXY_LOCAL_BRIEFING.md
 docs/nexy/*LOCAL*.md
 
+
+docs/nexy/NEXY_LOCAL_HEALTHCHECK.json
+docs/nexy/NEXY_LOCAL_HEALTHCHECK.md
+
