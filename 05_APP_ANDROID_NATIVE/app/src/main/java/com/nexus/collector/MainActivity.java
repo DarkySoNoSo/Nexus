@@ -47,6 +47,7 @@ public final class MainActivity extends Activity {
     private static final String PAGE_TIMELINE = "timeline";
     private static final String PAGE_COMPANION = "companion";
     private static final String PAGE_COLLECTOR = "collector";
+    private static final String PAGE_NEXY = "nexy";
     private static final String PAGE_WEB = "web";
 
     private ScrollView mainScroll;
@@ -57,6 +58,7 @@ public final class MainActivity extends Activity {
     private TextView chefLog;
     private EditText endpointInput;
     private EditText messageSearch;
+    private EditText nexySearchInput;
     private WebView webView;
     private String currentPage = PAGE_HOME;
 
@@ -140,6 +142,7 @@ public final class MainActivity extends Activity {
         chefInput = null;
         chefLog = null;
         messageSearch = null;
+        nexySearchInput = null;
         content.removeAllViews();
         topTitle.setText(PAGE_HOME.equals(page) ? "NEXUS" : title.toUpperCase());
         topSub.setText(PAGE_HOME.equals(page) ? "Mobile Chef-Zentrale" : "Aktive Seite: " + title);
@@ -175,7 +178,8 @@ public final class MainActivity extends Activity {
         row(p, nav("Dateien", v -> showFilesPage()), nav("Zeitstrahl", v -> showTimelinePage()));
         row(p, nav("Companion", v -> showCompanionPage()), nav("Collector", v -> showCollectorPage()));
         row(p, nav("Web", v -> showWebPage("/")), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }));
-        row(p, nav("Status", v -> showStatusOnly()), nav("Seite neu", v -> showHome()));
+        row(p, nav("Nexy", v -> showNexyPage()), nav("Status", v -> showStatusOnly()));
+        row(p, nav("Seite neu", v -> showHome()), nav("Nexy Briefing", v -> showNexyPage()));
 
         TextView snapshot = logBox("Start OK. Keine automatische Serverabfrage beim App-Start.\nBackend offline möglich. Nutze 'Verbindung testen' oder öffne gezielt Nexy, Chef, Nachrichten, Dateien oder Zeitstrahl.");
         p.addView(snapshot, card(8));
@@ -185,6 +189,85 @@ public final class MainActivity extends Activity {
         row(p, nav("Cyberblau", v -> setTheme("blue")), nav("Neon Gruen", v -> setTheme("green")));
         row(p, nav("Orange", v -> setTheme("orange")), nav("Menue oben", v -> showHome()));
     }
+
+
+    private void showNexyPage() {
+        clearPage(PAGE_NEXY, "Nexy", "Gedächtnis, Fokus, Recall und Briefing über die lokale Nexy Bridge.");
+        LinearLayout p = activePanel();
+
+        p.addView(section("BRIDGE"));
+        endpointInput = input("http://192.168.1.216:8765", true);
+        endpointInput.setText(nexyBridgeBase());
+        p.addView(endpointInput, card(8));
+
+        TextView out = logBox("Nexy bereit.\nBridge: " + nexyBridgeBase() + "\nKeine automatische Abfrage beim App-Start. Diese Seite lädt nur auf Knopfdruck.");
+        p.addView(out, card(8));
+
+        row(p,
+                nav("Bridge speichern", v -> { setNexyBridgeBase(endpointInput.getText().toString()); out.setText("Nexy Bridge gespeichert:\n" + nexyBridgeBase()); }),
+                nav("Status", v -> loadNexyEndpoint(out, "Nexy Status", "/api/nexy/status"))
+        );
+
+        row(p,
+                nav("Briefing", v -> loadNexyEndpoint(out, "Nexy Briefing", "/api/nexy/briefing")),
+                nav("Fokus", v -> loadNexyEndpoint(out, "Nexy Fokus", "/api/nexy/focus?limit=5"))
+        );
+
+        p.addView(section("SUCHE"));
+        nexySearchInput = input("Suchbegriff: Patrick, Safe-Start, Timeline...", true);
+        p.addView(nexySearchInput, card(8));
+
+        row(p,
+                nav("Suchen", v -> loadNexySearch(out)),
+                nav("Patrick", v -> { nexySearchInput.setText("Patrick"); loadNexySearch(out); })
+        );
+
+        row(p,
+                nav("Safe-Start", v -> { nexySearchInput.setText("Safe-Start"); loadNexySearch(out); }),
+                nav("Timeline", v -> loadNexyEndpoint(out, "Nexy Timeline", "/api/nexy/timeline?limit=8"))
+        );
+    }
+
+    private String nexyBridgeBase() {
+        return NexusConfig.prefs(this).getString("nexy_bridge_url", "http://192.168.1.216:8765");
+    }
+
+    private void setNexyBridgeBase(String value) {
+        String v = value == null ? "" : value.trim();
+        if (v.endsWith("/")) v = v.substring(0, v.length() - 1);
+        if (v.isEmpty()) v = "http://192.168.1.216:8765";
+        NexusConfig.prefs(this).edit().putString("nexy_bridge_url", v).apply();
+    }
+
+    private void loadNexySearch(TextView out) {
+        String q = nexySearchInput == null ? "" : nexySearchInput.getText().toString().trim();
+        if (q.isEmpty()) {
+            out.setText("Suchbegriff fehlt.");
+            return;
+        }
+        try {
+            loadNexyEndpoint(out, "Nexy Suche: " + q, "/api/nexy/search?q=" + enc(q) + "&limit=5");
+        } catch (Exception ex) {
+            out.setText("Nexy Suche konnte nicht vorbereitet werden: " + ex.getClass().getSimpleName());
+        }
+    }
+
+    private void loadNexyEndpoint(TextView out, String title, String path) {
+        String base = nexyBridgeBase();
+        out.setText("Lade " + title + "...\n" + base + path);
+        new Thread(() -> {
+            try {
+                String body = httpGet(base + path);
+                String text = title + "\nQuelle: " + host(base) + "\n\n" + cutKeepLines(body, 6500);
+                runOnUiThread(() -> { if (PAGE_NEXY.equals(currentPage)) out.setText(text); });
+            } catch (Exception ex) {
+                String err = "Nexy nicht erreichbar.\nBridge: " + base + "\nFehler: " + ex.getClass().getSimpleName() + " " + cutKeepLines(ex.getMessage(), 300)
+                        + "\n\nPrüfen: PC Bridge läuft mit NEXY_HOST=0.0.0.0, Port 8765 offen, Handy im gleichen WLAN/Tailscale.";
+                runOnUiThread(() -> { if (PAGE_NEXY.equals(currentPage)) out.setText(err); });
+            }
+        }).start();
+    }
+
 
     private void showStatusOnly() {
         clearPage(PAGE_HOME, "Status", "Aktueller App- und Collector-Zustand.");
@@ -861,4 +944,5 @@ public final class MainActivity extends Activity {
     private static String enc(String v) throws Exception { return URLEncoder.encode(v == null ? "" : v, "UTF-8"); }
     private static String host(String base) { try { URL u = new URL(base); return u.getHost() + (u.getPort() > 0 ? ":" + u.getPort() : ""); } catch (Exception e) { return base == null ? "" : base; } }
     private static String cut(String v, int max) { if (v == null) return ""; String c = v.replace('\n', ' ').replace('\r', ' ').trim(); return c.length() <= max ? c : c.substring(0, Math.max(0, max - 3)) + "..."; }
+    private static String cutKeepLines(String v, int max) { if (v == null) return ""; String c = v.replace('\r', '').trim(); return c.length() <= max ? c : c.substring(0, Math.max(0, max - 12)) + "\n...<cut>"; }
 }

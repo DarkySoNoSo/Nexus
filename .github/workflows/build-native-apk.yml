@@ -1,0 +1,46 @@
+﻿name: Build Nexus Native APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "05_APP_ANDROID_NATIVE/**"
+      - "settings.gradle"
+      - "build.gradle"
+      - ".github/workflows/build-native-apk.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Build debug APK
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p out
+          cp 05_APP_ANDROID_NATIVE/app/build/outputs/apk/debug/app-debug.apk out/Nexus-Chef-Native-v1.6.4-nexy-bridge-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexus-Chef-Native-v1.6.4-nexy-bridge-debug
+          path: out/Nexus-Chef-Native-v1.6.4-nexy-bridge-debug.apk
