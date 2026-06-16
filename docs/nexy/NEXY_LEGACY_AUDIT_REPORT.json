@@ -1,0 +1,30 @@
+{
+  "patrick_context_profile": {
+    "path": "/mnt/c/MasterIndex_Storage/context/patrick_context_profile.md",
+    "exists": false
+  },
+  "communication_context": {
+    "path": "/mnt/c/MasterIndex_Storage/context/communication_context.md",
+    "exists": false
+  },
+  "chef_channel": {
+    "path": "/mnt/c/MasterIndex_Storage/context/context_chef_channel.jsonl",
+    "exists": false
+  },
+  "nexus_memory": {
+    "path": "/mnt/c/MasterIndex_Storage/nexus_memory.json",
+    "exists": false
+  },
+  "timeline_jsonl": {
+    "path": "/mnt/c/MasterIndex_Storage/timeline/nexus_timeline.jsonl",
+    "exists": false
+  },
+  "patrick_timeline_md": {
+    "path": "/mnt/c/MasterIndex_Storage/timeline/patrick_timeline.md",
+    "exists": false
+  },
+  "legacy_sqlite": {
+    "path": "/mnt/c/MasterIndex_Storage/_NEXUS_SYSTEM/db/nexus_catalog.sqlite",
+    "exists": false
+  }
+}
