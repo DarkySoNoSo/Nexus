@@ -944,5 +944,5 @@ public final class MainActivity extends Activity {
     private static String enc(String v) throws Exception { return URLEncoder.encode(v == null ? "" : v, "UTF-8"); }
     private static String host(String base) { try { URL u = new URL(base); return u.getHost() + (u.getPort() > 0 ? ":" + u.getPort() : ""); } catch (Exception e) { return base == null ? "" : base; } }
     private static String cut(String v, int max) { if (v == null) return ""; String c = v.replace('\n', ' ').replace('\r', ' ').trim(); return c.length() <= max ? c : c.substring(0, Math.max(0, max - 3)) + "..."; }
-    private static String cutKeepLines(String v, int max) { if (v == null) return ""; String c = v.replace('\r', '').trim(); return c.length() <= max ? c : c.substring(0, Math.max(0, max - 12)) + "\n...<cut>"; }
+    private static String cutKeepLines(String v, int max) { if (v == null) return ""; String c = v.replace("\r", "").trim(); return c.length() <= max ? c : c.substring(0, Math.max(0, max - 12)) + "\n...<cut>"; }
 }
