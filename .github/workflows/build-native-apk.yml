@@ -1,4 +1,4 @@
-﻿name: Build Nexus Native APK
+name: Build Nexus Native APK
 
 on:
   workflow_dispatch:
@@ -37,10 +37,10 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p out
-          cp 05_APP_ANDROID_NATIVE/app/build/outputs/apk/debug/app-debug.apk out/Nexus-Chef-Native-v1.6.4-nexy-bridge-debug.apk
+          cp 05_APP_ANDROID_NATIVE/app/build/outputs/apk/debug/app-debug.apk out/Nexus-Chef-Native-v1.6.6-nexy-bridge-debug.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Nexus-Chef-Native-v1.6.4-nexy-bridge-debug
-          path: out/Nexus-Chef-Native-v1.6.4-nexy-bridge-debug.apk
+          name: Nexus-Chef-Native-v1.6.6-nexy-bridge-debug
+          path: out/Nexus-Chef-Native-v1.6.6-nexy-bridge-debug.apk
