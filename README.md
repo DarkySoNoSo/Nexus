@@ -1,20 +1,10 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Nexus
 
-# Run and deploy your AI Studio app
+Stabiler Fokus: Android Native App + Backend/Collector.
 
-This contains everything you need to run your app locally.
+Gold-Regel:
+Die App darf beim Start keine automatische Serverabfrage machen.
+Start muss auch ohne PC, Backend, Tailscale oder Token stabil funktionieren.
 
-View your app in AI Studio: https://ai.studio/apps/7da1e4eb-5420-4004-ae61-5db000ae5d7f
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Bekannter stabiler APK-Stand:
+Nexus-Chef-Native-v1.6.3-safe-debug.apk
