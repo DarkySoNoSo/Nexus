@@ -177,9 +177,8 @@ public final class MainActivity extends Activity {
         row(p, nav("Web", v -> showWebPage("/")), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }));
         row(p, nav("Status", v -> showStatusOnly()), nav("Seite neu", v -> showHome()));
 
-        TextView snapshot = logBox("Lade Kurzlage...");
+        TextView snapshot = logBox("Start OK. Keine automatische Serverabfrage beim App-Start.\nBackend offline möglich. Nutze 'Verbindung testen' oder öffne gezielt Nexy, Chef, Nachrichten, Dateien oder Zeitstrahl.");
         p.addView(snapshot, card(8));
-        loadHomeSnapshot(snapshot);
         p.addView(section("STATUS"));
         p.addView(label(status(), 12, false, Color.rgb(215, 213, 208)));
         p.addView(section("THEME"));
