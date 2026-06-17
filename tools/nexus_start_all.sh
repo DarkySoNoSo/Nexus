@@ -1,61 +1,66 @@
 #!/data/data/com.termux/files/usr/bin/bash
-set -Eeuo pipefail
+set -u
 
-cd "$HOME/Nexus-cleanwork"
+cd "$HOME/Nexus-cleanwork" || exit 1
 mkdir -p .run logs
+
+FAIL=0
+
+health_ok() {
+  url="$1"
+  curl -sS --max-time 3 "$url" >/dev/null 2>&1
+}
 
 start_service() {
   name="$1"
   cmd="$2"
   health="$3"
-
-  pidfile=".run/${name}.pid"
   logfile="logs/${name}.log"
+  pidfile=".run/${name}.pid"
 
-  if [ -f "$pidfile" ]; then
-    oldpid="$(cat "$pidfile" 2>/dev/null || true)"
-    if [ -n "${oldpid:-}" ] && kill -0 "$oldpid" 2>/dev/null; then
-      echo "$name: läuft bereits PID $oldpid"
-      return 0
-    fi
+  echo "$name: prüfe $health"
+
+  if health_ok "$health"; then
+    echo "$name: läuft bereits / Health OK"
+    return 0
   fi
 
   echo "$name: starte..."
-  nohup bash -lc "$cmd" > "$logfile" 2>&1 &
+  bash -lc "$cmd" > "$logfile" 2>&1 &
   pid="$!"
   echo "$pid" > "$pidfile"
 
   sleep 2
 
-  if kill -0 "$pid" 2>/dev/null; then
+  if kill -0 "$pid" 2>/dev/null && health_ok "$health"; then
     echo "$name: PID $pid läuft"
-  else
-    echo "$name: START FEHLGESCHLAGEN"
-    tail -n 80 "$logfile" || true
-    return 1
+    echo "$name: Health OK"
+    return 0
   fi
 
-  if command -v curl >/dev/null 2>&1; then
-    echo "$name: Healthcheck $health"
-    curl -sS --max-time 3 "$health" | head -c 600 || true
-    echo
-  fi
+  echo "$name: START ODER HEALTHCHECK FEHLGESCHLAGEN"
+  echo "--- $logfile ---"
+  tail -n 80 "$logfile" 2>/dev/null || true
+  FAIL=1
+  return 0
 }
 
-if [ -f backend/nexy/nexy_bridge_api.py ]; then
-  start_service "nexy_bridge" \
-    'export NEXY_HOST="0.0.0.0"; export NEXY_PORT="8765"; python -u backend/nexy/nexy_bridge_api.py' \
-    'http://127.0.0.1:8765/api/nexy/status'
+start_service "nexy_bridge" \
+  'export NEXY_HOST="0.0.0.0"; export NEXY_PORT="8765"; python -u backend/nexy/nexy_bridge_api.py' \
+  'http://127.0.0.1:8765/api/nexy/status'
+
+start_service "digi_dragon_bridge" \
+  'export DIGI_DRAGON_HOST="0.0.0.0"; export DIGI_DRAGON_PORT="8777"; python -u backend/companion/dragon_bridge_api.py' \
+  'http://127.0.0.1:8777/api/dragon/status'
+
+if [ -f backend/companion/pad_container_api.py ]; then
+  start_service "digipad_container" \
+    'export DIGIPAD_HOST="0.0.0.0"; export DIGIPAD_PORT="8788"; python -u backend/companion/pad_container_api.py' \
+    'http://127.0.0.1:8788/api/pad/health'
 else
-  echo "nexy_bridge: backend/nexy/nexy_bridge_api.py nicht vorhanden, übersprungen"
+  echo "digipad_container: Datei fehlt, übersprungen"
+  FAIL=1
 fi
 
-if [ -f backend/companion/dragon_bridge_api.py ]; then
-  start_service "digi_dragon_bridge" \
-    'export DIGI_DRAGON_HOST="0.0.0.0"; export DIGI_DRAGON_PORT="8777"; python -u backend/companion/dragon_bridge_api.py' \
-    'http://127.0.0.1:8777/api/dragon/status'
-else
-  echo "digi_dragon_bridge: backend/companion/dragon_bridge_api.py nicht vorhanden, übersprungen"
-fi
-
-echo "Start-All fertig."
+echo "Start-All fertig. FAIL=$FAIL"
+exit "$FAIL"

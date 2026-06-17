@@ -55,3 +55,29 @@ Port 8766 ist aktuell kein offizieller Nexus-Dienst.
 1. Doctor grün bekommen.
 2. Start/Stop-Scripts stabilisieren.
 3. Android Digi-Dragon-Seite erst danach.
+
+
+## DigiPad Container
+
+| Modul | Rolle | Pfad | DB | Port | Start | Status |
+|---|---|---|---|---:|---|---|
+| DigiPad Container | geschützte Family-/Remote-Pad-Schicht für Fiona/andere Pads | backend/companion/pad_container_api.py | data/digipad_container.db | 8788 | tools/start_digipad_container.sh | aktiv |
+
+### Sicherheitsgrenze
+
+Fiona/Remote-Pads sprechen nur mit Port 8788 und nur mit /api/pad/* Endpunkten.
+Nexy 8765, Digi Dragon 8777 und private Nexus-Endpunkte bleiben für Remote-Pads getrennt.
+
+### Token
+
+DigiPad-Profile nutzen lokale Tokens.
+Tokens werden nicht committed.
+
+
+## Verbindliche Remote-Portkarte
+
+- Nexy Bridge: 8765, privat
+- Digi Dragon Bridge: 8777, interner Core
+- DigiPad Container API: 8788, geschützte Remote-Schicht
+
+Fionas Handy nutzt später 8788, nicht 8765 und nicht 8777.

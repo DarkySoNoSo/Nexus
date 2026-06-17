@@ -76,7 +76,9 @@ check_endpoint() {
   check_file "backend/companion/dragon_db.py"
   check_file "backend/companion/dragon_cli.py"
   check_file "backend/companion/dragon_bridge_api.py"
+  check_file "backend/companion/pad_container_api.py"
   check_exec "tools/start_digi_dragon_bridge.sh"
+  check_exec "tools/start_digipad_container.sh"
   check_exec "tools/nexus_start_all.sh"
   check_exec "tools/nexus_stop_all.sh"
 
@@ -117,6 +119,7 @@ check_endpoint() {
   echo ""
   check_endpoint "Digi Dragon" "http://127.0.0.1:8777/api/dragon/status"
   check_endpoint "Digi Dragon Health" "http://127.0.0.1:8777/api/dragon/health"
+  check_endpoint "DigiPad Container Health" "http://127.0.0.1:8788/api/pad/health"
   check_endpoint "Nexy" "http://127.0.0.1:8765/api/nexy/status"
 
   echo ""
