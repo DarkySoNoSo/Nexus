@@ -110,12 +110,28 @@ public final class MainActivity extends Activity {
     private void enableFullscreen() {
         Window window = getWindow();
         if (window == null) return;
-        if (Build.VERSION.SDK_INT >= 30) {
-            window.setDecorFitsSystemWindows(true);
-        }
+
         View decor = window.getDecorView();
-        if (decor != null) {
-            decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        if (decor == null) return;
+
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.setDecorFitsSystemWindows(false);
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller != null) {
+                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+                controller.setSystemBarsBehavior(
+                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                );
+            }
+        } else {
+            decor.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            );
         }
     }
 
@@ -863,7 +879,7 @@ public final class MainActivity extends Activity {
     }
 
     private String accessText() {
-        return "Server: " + NexusConfig.baseUrl(this) + "\nNachrichtenrecht: " + (notificationAccess() ? "aktiv" : "fehlt") + " | SMS: " + (smsPermission() ? "aktiv" : "fehlt") + "\nBei Fehler: Collector oeffnen und Verbindung testen.";
+        return "Server: " + NexusConfig.baseUrl(this) + "\nBenachrichtigungszugriff: " + (notificationAccess() ? "aktiv" : "fehlt") + " | SMS: " + (smsPermission() ? "aktiv" : "fehlt") + "\nRechte jetzt im Android-System sichtbar: NotificationListener + SMS Receiver sind im Manifest registriert.";
     }
 
     private void testConnection() {
@@ -901,7 +917,13 @@ public final class MainActivity extends Activity {
     }
 
     private boolean smsPermission() { return checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED; }
-    private void requestSms() { if (!smsPermission()) requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS}, 1001); }
+    private void requestSms() {
+        if (!smsPermission()) {
+            requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS}, 1001);
+        } else {
+            showStatusOnly();
+        }
+    }
     private boolean notificationAccess() { String enabled = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners"); return enabled != null && enabled.toLowerCase().contains(getPackageName().toLowerCase()); }
     private void openNotificationAccess() { startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); }
 

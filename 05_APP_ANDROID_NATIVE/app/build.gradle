@@ -10,7 +10,7 @@ android {
         applicationId "com.nexus.chefnative"
         minSdk 26
         targetSdk 35
-        versionCode 168
-        versionName "1.6.8-install-safe"
+        versionCode 169
+        versionName "1.6.9-rights-fullscreen"
     }
 }

@@ -37,10 +37,10 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p out
-          cp 05_APP_ANDROID_NATIVE/app/build/outputs/apk/debug/app-debug.apk out/Nexus-Chef-Native-v1.6.8-install-safe-debug.apk
+          cp 05_APP_ANDROID_NATIVE/app/build/outputs/apk/debug/app-debug.apk out/Nexus-Chef-Native-v1.6.9-rights-fullscreen
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Nexus-Chef-Native-v1.6.8-install-safe-debug
-          path: out/Nexus-Chef-Native-v1.6.8-install-safe-debug.apk
+          name: Nexus-Chef-Native-v1.6.9-rights-fullscreen
+          path: out/Nexus-Chef-Native-v1.6.9-rights-fullscreen
