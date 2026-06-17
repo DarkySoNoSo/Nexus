@@ -68,6 +68,7 @@ public final class MainActivity extends Activity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         installCrashGuard();
+        migrateBridgeDefaults();
         try {
             safeFullscreen();
             setContentView(buildUi());
@@ -100,6 +101,33 @@ public final class MainActivity extends Activity {
                 runOnUiThread(() -> showCrashScreen("uncaught:" + thread.getName(), throwable));
             } catch (Throwable ignored) {}
         });
+    }
+
+    private void migrateBridgeDefaults() {
+        try {
+            android.content.SharedPreferences prefs = NexusConfig.prefs(this);
+            android.content.SharedPreferences.Editor edit = prefs.edit();
+            boolean changed = false;
+
+            String nexy = prefs.getString("nexy_bridge_url", "");
+            if (nexy == null || nexy.trim().isEmpty()
+                    || nexy.contains("192.168.1.216:8765")
+                    || nexy.contains("100.107.24.67:8765")) {
+                edit.putString("nexy_bridge_url", "http://127.0.0.1:8765");
+                changed = true;
+            }
+
+            String dragon = prefs.getString("dragon_bridge_url", "");
+            if (dragon == null || dragon.trim().isEmpty()
+                    || dragon.contains(":8766")
+                    || dragon.contains("192.168.1.216")
+                    || dragon.contains("100.107.24.67")) {
+                edit.putString("dragon_bridge_url", "http://127.0.0.1:8777");
+                changed = true;
+            }
+
+            if (changed) edit.apply();
+        } catch (Throwable ignored) {}
     }
 
     private void safeFullscreen() {
@@ -213,7 +241,7 @@ public final class MainActivity extends Activity {
 
         if (!BuildConfig.DIGIPAD_ONLY && !PAGE_HOME.equals(page)) {
             LinearLayout back = panel();
-            row(back, nav("Zurueck", v -> showHome()), nav("Menue", v -> showHome()));
+            row(back, nav("← Zurück", v -> showHome()), nav("Zentrale", v -> showHome()));
             content.addView(back, card(0));
         }
 
@@ -231,29 +259,29 @@ public final class MainActivity extends Activity {
 
     private void showHome() {
         if (BuildConfig.DIGIPAD_ONLY) { showDigiPadPage(); return; }
-        clearPage(PAGE_HOME, "Uebersicht", "Nur Menue, Zugriffe, Kurzlage und Status. Jede Funktion oeffnet eine eigene Seite.");
+        clearPage(PAGE_HOME, "Zentrale", "Nexus im Überblick: Master ★, Nexy, DigiDragon, Nachrichten, Dateien und Zeitstrahl.");
         LinearLayout p = activePanel();
-        p.addView(section("ZUGAENGE"));
+        p.addView(section("VERBINDUNGEN"));
         p.addView(label(accessText(), 13, true, Color.rgb(238, 232, 224)));
-        row(p, nav("Verbindung testen", v -> testConnection()), nav("Collector", v -> showCollectorPage()));
-        row(p, nav("Nachrichtenrecht", v -> openNotificationAccess()), nav("SMS-Recht", v -> requestSms()));
+        row(p, nav("Verbindung prüfen", v -> testConnection()), nav("Collector", v -> showCollectorPage()));
+        row(p, nav("Benachrichtigungen", v -> openNotificationAccess()), nav("SMS erlauben", v -> requestSms()));
 
-        p.addView(section("MENUE"));
-        row(p, nav("Chef", v -> showChefPage()), nav("Nachrichten", v -> showMessagesPage()));
+        p.addView(section("BEREICHE"));
+        row(p, nav("Master ★", v -> showChefPage()), nav("Nachrichten", v -> showMessagesPage()));
         row(p, nav("Dateien", v -> showFilesPage()), nav("Zeitstrahl", v -> showTimelinePage()));
-        row(p, nav("Digi Dragon", v -> showCompanionPage()), nav("DigiPad", v -> showDigiPadPage()));
-        row(p, nav("Collector", v -> showCollectorPage()), nav("Collector Status", v -> showStatusOnly()));
-        row(p, nav("Web", v -> showWebPage("/")), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }));
+        row(p, nav("DigiDragon", v -> showCompanionPage()), nav("Nest", v -> showCompanionPage()));
+        row(p, nav("Collector", v -> showCollectorPage()), nav("Systemstatus", v -> showStatusOnly()));
+        row(p, nav("Web", v -> showWebPage("/")), nav("Widget aktualisieren", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }));
         row(p, nav("Nexy", v -> showNexyPage()), nav("Status", v -> showStatusOnly()));
-        row(p, nav("Seite neu", v -> showHome()), nav("Nexy Briefing", v -> showNexyPage()));
+        row(p, nav("Aktualisieren", v -> showHome()), nav("Nexy Briefing", v -> showNexyPage()));
 
-        TextView snapshot = logBox("Start OK. Keine automatische Serverabfrage beim App-Start.\nBackend offline möglich. Nutze 'Verbindung testen' oder öffne gezielt Nexy, Chef, Nachrichten, Dateien oder Zeitstrahl.");
+        TextView snapshot = logBox("Start bereit. Keine automatische Serverabfrage beim Öffnen.\nLade gezielt: Nexy, DigiDragon, Master ★, Nachrichten, Dateien oder Zeitstrahl.");
         p.addView(snapshot, card(8));
-        p.addView(section("STATUS"));
+        p.addView(section("SYSTEM"));
         p.addView(label(status(), 12, false, Color.rgb(215, 213, 208)));
-        p.addView(section("THEME"));
+        p.addView(section("DESIGN"));
         row(p, nav("Cyberblau", v -> setTheme("blue")), nav("Neon Gruen", v -> setTheme("green")));
-        row(p, nav("Orange", v -> setTheme("orange")), nav("Menue oben", v -> showHome()));
+        row(p, nav("Orange", v -> setTheme("orange")), nav("Zentrale", v -> showHome()));
     }
 
 
@@ -271,7 +299,7 @@ public final class MainActivity extends Activity {
 
         row(p,
                 nav("Lokal 127", v -> useNexyBridge(out, "http://127.0.0.1:8765", "Lokal-Termux")),
-                nav("LAN 192", v -> useNexyBridge(out, "http://192.168.1.216:8765", "PC/LAN"))
+                nav("LAN 192", v -> useNexyBridge(out, "http://127.0.0.1:8765", "PC/LAN"))
         );
 
         row(p,
@@ -471,7 +499,7 @@ public final class MainActivity extends Activity {
                 runOnUiThread(() -> { if (PAGE_NEXY.equals(currentPage)) out.setText(text); });
             } catch (Exception ex) {
                 String err = "Nexy nicht erreichbar.\nBridge: " + base + "\nFehler: " + ex.getClass().getSimpleName() + " " + cutKeepLines(ex.getMessage(), 300)
-                        + "\n\nPrüfen: PC Bridge läuft mit NEXY_HOST=0.0.0.0, Port 8765 offen, Handy im gleichen WLAN/Tailscale.";
+                        + "\n\nPrüfen: Termux Bridge läuft lokal auf 127.0.0.1:8765. In Termux: cd ~/Nexus-cleanwork && bash tools/nexus_start_all.sh";
                 runOnUiThread(() -> { if (PAGE_NEXY.equals(currentPage)) out.setText(err); });
             }
         }).start();
@@ -695,29 +723,72 @@ public final class MainActivity extends Activity {
     }
 
     private void showCompanionPage() {
-        clearPage(PAGE_COMPANION, "Digi Dragon", "Echter Digi-Dragon-Core über lokale Termux-Bridge. Offline startfähig, Aktionen nur auf Knopfdruck.");
+        clearPage(PAGE_COMPANION, "DigiDragon", "Master ★ · Minihöhle · Nest · Training · Arena");
         LinearLayout p = activePanel();
 
-        p.addView(section("BRIDGE"));
-        endpointInput = input("http://127.0.0.1:8777", true);
-        endpointInput.setText(dragonBridgeBase());
-        p.addView(endpointInput, card(8));
+        LinearLayout hero = panel();
+        hero.addView(label("MASTER ★", 11, true, orange()));
+        hero.addView(label("DigiDragon", 30, true, Color.WHITE));
 
-        TextView out = logBox("Digi Dragon bereit.\nBridge: " + dragonBridgeBase()
-                + "\nKeine automatische Abfrage beim App-Start.\nTermux muss laufen: ./tools/nexus_start_all.sh");
+        TextView scene = label(
+                "        ✦  MINI-HÖHLE  ✦
+
+"
+                        + "     ⛓        🔥        ⛓
+"
+                        + "        /\_/\\
+"
+                        + "     __/  ◉ ◉  \__
+"
+                        + "    /  \  ▾▾▾  /  \\
+"
+                        + "       /|  🐉  |\\
+"
+                        + "      /_|_____|_\\
+
+"
+                        + "  Nest aus schwarzem Stein, Glutkristallen und Runen.
+"
+                        + "  Klein genug zum Wandern. Düster. Rot-Schwarz. Wachsam.",
+                15,
+                true,
+                Color.rgb(238, 218, 198)
+        );
+        scene.setGravity(Gravity.CENTER);
+        scene.setMinLines(9);
+        scene.setLineSpacing(dp(2), 1.08f);
+        scene.setBackground(box(18, Color.rgb(6, 6, 7), Color.rgb(120, 45, 25)));
+        hero.addView(scene, card(10));
+
+        row(hero,
+                nav("Status", v -> loadDragonEndpoint((TextView) hero.getTag(), "DigiDragon Status", "/api/dragon/status")),
+                nav("Nest", v -> loadDragonEndpoint((TextView) hero.getTag(), "DigiDragon Habitat", "/api/dragon/habitat"))
+        );
+
+        p.addView(hero, card(0));
+
+        p.addView(section("DRACHENSTATUS"));
+        TextView out = logBox("DigiDragon bereit.
+"
+                + "Bridge: " + dragonBridgeBase() + "
+"
+                + "Szene: Minihöhle / Nest / Feuer-Dunkel
+
+"
+                + "Drücke Status, Training oder Arena.");
+        hero.setTag(out);
         p.addView(out, card(8));
 
-        row(p,
-                nav("Bridge speichern", v -> { setDragonBridgeBase(endpointInput.getText().toString()); out.setText("Digi Dragon Bridge gespeichert:\n" + dragonBridgeBase()); }),
-                nav("Status", v -> loadDragonEndpoint(out, "Digi Dragon Status", "/api/dragon/status"))
-        );
-
-        row(p,
-                nav("Habitat", v -> loadDragonEndpoint(out, "Digi Dragon Habitat", "/api/dragon/habitat")),
-                nav("Codex", v -> loadDragonEndpoint(out, "Digi Dragon Codex", "/api/dragon/codex"))
-        );
-
         p.addView(section("AKTIONEN"));
+        row(p,
+                nav("Trainieren", v -> postDragonAction(out, "Training", "/api/dragon/train", "{\"training_type\":\"strength\"}")),
+                nav("Arena", v -> postDragonAction(out, "Arena", "/api/dragon/arena", "{}"))
+        );
+
+        row(p,
+                nav("Evolution", v -> postDragonAction(out, "Evolution", "/api/dragon/evolve", "{}")),
+                nav("Habitat", v -> loadDragonEndpoint(out, "DigiDragon Habitat", "/api/dragon/habitat"))
+        );
 
         row(p,
                 nav("Füttern", v -> postDragonAction(out, "Füttern", "/api/dragon/feed", "{}")),
@@ -725,18 +796,25 @@ public final class MainActivity extends Activity {
         );
 
         row(p,
-                nav("Training Fokus", v -> postDragonAction(out, "Training Fokus", "/api/dragon/train", "{\"training_type\":\"focus\"}")),
-                nav("Training Kraft", v -> postDragonAction(out, "Training Kraft", "/api/dragon/train", "{\"training_type\":\"strength\"}"))
-        );
-
-        row(p,
                 nav("Freikampf", v -> postDragonAction(out, "Freikampf", "/api/dragon/freefight", "{}")),
-                nav("Arena", v -> postDragonAction(out, "Arena", "/api/dragon/arena", "{}"))
+                nav("Master ★ fragen", v -> dragonChef(out))
         );
 
+        p.addView(section("SYSTEM"));
+        endpointInput = input("http://127.0.0.1:8777", true);
+        endpointInput.setText(dragonBridgeBase());
+        p.addView(endpointInput, card(8));
+
         row(p,
-                nav("Evolution", v -> postDragonAction(out, "Evolution", "/api/dragon/evolve", "{}")),
-                nav("Chef mit Zustand", v -> dragonChef(out))
+                nav("Bridge speichern", v -> {
+                    setDragonBridgeBase(endpointInput.getText().toString());
+                    out.setText("DigiDragon Bridge gespeichert:
+" + dragonBridgeBase()
+                            + "
+
+Drücke Status oder Arena.");
+                }),
+                nav("Codex", v -> loadDragonEndpoint(out, "DigiDragon Codex", "/api/dragon/codex"))
         );
     }
 
@@ -760,7 +838,7 @@ public final class MainActivity extends Activity {
                 String text = dragonRender(title, body, base);
                 runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(text); });
             } catch (Exception ex) {
-                String err = "Digi Dragon nicht erreichbar.\n"
+                String err = "DigiDragon nicht erreichbar.\n"
                         + "Bridge: " + base + "\n"
                         + "Fehler: " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 160) + "\n\n"
                         + "Termux prüfen:\n"
@@ -781,7 +859,7 @@ public final class MainActivity extends Activity {
                 String text = dragonRender(title, body, base);
                 runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(text); });
             } catch (Exception ex) {
-                String err = "Digi-Dragon-Aktion fehlgeschlagen.\n"
+                String err = "DigiDragon-Aktion fehlgeschlagen.\n"
                         + "Aktion: " + title + "\n"
                         + "Bridge: " + base + "\n"
                         + "Fehler: " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 160);
@@ -864,10 +942,10 @@ public final class MainActivity extends Activity {
     private void dragonChef(TextView out) {
         String state = out == null ? "" : out.getText().toString();
         showChefPage();
-        chefInput.setText("Digi-Dragon-Zustand:\n"
+        chefInput.setText("DigiDragon-Zustand:\n"
                 + cutKeepLines(state, 1800)
-                + "\n\nBitte kurz und konkret: Welche nächste sinnvolle Aktion im Digi-Dragon-/Nexus-System?");
-        if (chefLog != null) chefLog.setText("Digi-Dragon-Zustand bereit. Drücke 'An Chef senden', wenn der Chef wirklich gefragt werden soll.");
+                + "\n\nBitte kurz und konkret: Welche nächste sinnvolle Aktion im DigiDragon-/Nexus-System?");
+        if (chefLog != null) chefLog.setText("DigiDragon-Zustand bereit. Drücke 'An Master ★ senden', wenn der Master ★ wirklich gefragt werden soll.");
     }
 
     private void companionTrain(TextView out) {
@@ -930,8 +1008,8 @@ public final class MainActivity extends Activity {
     private void companionChef() {
         String state = companionSummary();
         showChefPage();
-        chefInput.setText("Companion-Zustand:\n" + state + "\n\nBitte priorisiere meinen Tag kurz und konkret. Was soll ich zuerst beachten?");
-        if (chefLog != null) chefLog.setText("Companion-Zustand bereit. Druecke 'An Chef senden', wenn du den Chef wirklich fragen willst.");
+        chefInput.setText("DigiDragon-Zustand:\n" + state + "\n\nBitte priorisiere kurz und konkret: Was ist der nächste sinnvolle Schritt?");
+        if (chefLog != null) chefLog.setText("DigiDragon-Zustand bereit. Druecke 'An Master ★ senden', wenn du den Chef wirklich fragen willst.");
     }
 
     private int companionInt(String key, int fallback) {
@@ -968,11 +1046,11 @@ public final class MainActivity extends Activity {
     }
 
     private String companionSummary() {
-        return "Mini-Drache: " + dragonStage()
+        return "DigiDragon: " + dragonStage()
                 + "\nLevel: " + companionLevel() + " | XP: " + companionInt("xp", 0) + " | Siege: " + companionInt("wins", 0)
                 + "\nEnergie: " + companionInt("energy", 80) + " | Stress: " + companionInt("stress", 15)
                 + "\nNaechste Evolution: " + nextEvolutionText()
-                + "\nPrinzip: lokal, kostenlos, erst Chef-Button nutzt den Chef-Kanal.";
+                + "\nPrinzip: lokal, kostenlos, erst Master ★ nutzt den Master-Kanal.";
     }
 
     private int clamp(int value, int min, int max) { return Math.max(min, Math.min(max, value)); }
@@ -1017,14 +1095,14 @@ public final class MainActivity extends Activity {
     }
 
     private void showChefPage() {
-        clearPage(PAGE_CHEF, "Chef", "Direkter Kanal. Keine Kommunikationsliste auf dieser Seite.");
+        clearPage(PAGE_CHEF, "Master ★", "Direkter Master-Kanal. Klarer Auftrag, klare Antwort.");
         LinearLayout p = activePanel();
-        chefInput = input("Dem Chef Kontext, Frage oder Auftrag schreiben...", false);
+        chefInput = input("Dem Master ★ Kontext, Frage oder Auftrag schreiben...", false);
         chefInput.setMinLines(3);
         chefInput.setMaxLines(7);
         p.addView(chefInput, card(8));
-        row(p, nav("An Chef senden", v -> sendChef()), nav("Chef laden", v -> loadChefLog()));
-        chefLog = logBox("Chef-Kanal wird geladen...");
+        row(p, nav("An Master ★ senden", v -> sendChef()), nav("Master laden", v -> loadChefLog()));
+        chefLog = logBox("Master ★ Kanal wird geladen...");
         p.addView(chefLog, card(8));
         loadChefLog();
     }
@@ -1037,7 +1115,7 @@ public final class MainActivity extends Activity {
         TextView summary = label("Lade Nachrichten...", 13, true, Color.rgb(240, 235, 226));
         LinearLayout list = vertical();
         row(p, nav("Suche", v -> loadMessages(summary, list, searchText())), nav("Inkasso", v -> { messageSearch.setText("inkasso"); loadMessages(summary, list, "inkasso"); }));
-        row(p, nav("Alle neu", v -> loadMessages(summary, list, "")), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); loadMessages(summary, list, searchText()); }));
+        row(p, nav("Alle neu", v -> loadMessages(summary, list, "")), nav("Widget aktualisieren", v -> { NexusMessagesWidgetProvider.updateAll(this); loadMessages(summary, list, searchText()); }));
         p.addView(summary, card(8));
         p.addView(list);
         loadMessages(summary, list, "");
@@ -1291,9 +1369,9 @@ public final class MainActivity extends Activity {
         endpointInput = input("http://192.168.1.216:8081", true);
         endpointInput.setText(NexusConfig.baseUrl(this));
         p.addView(endpointInput, card(8));
-        row(p, nav("Server speichern", v -> NexusConfig.setEndpoint(this, endpointInput.getText().toString())), nav("Verbindung testen", v -> testConnection()));
+        row(p, nav("Server speichern", v -> NexusConfig.setEndpoint(this, endpointInput.getText().toString())), nav("Verbindung prüfen", v -> testConnection()));
         row(p, nav("LAN 192.168", v -> { endpointInput.setText("http://192.168.1.216:8081"); NexusConfig.setEndpoint(this, endpointInput.getText().toString()); }), nav("Tailscale 100", v -> { endpointInput.setText("http://100.107.24.67:8081"); NexusConfig.setEndpoint(this, endpointInput.getText().toString()); }));
-        row(p, nav("Nachrichtenrecht", v -> openNotificationAccess()), nav("SMS-Recht", v -> requestSms()));
+        row(p, nav("Benachrichtigungen", v -> openNotificationAccess()), nav("SMS erlauben", v -> requestSms()));
         row(p, nav("Testevent", v -> sendTestEvent()), nav("Outbox senden", v -> NexusEventSender.retryOutbox(this)));
     }
 
@@ -1301,7 +1379,7 @@ public final class MainActivity extends Activity {
         clearPage(PAGE_WEB, "Nexus Web", "Bestehendes Web-Cockpit innerhalb der App.");
         LinearLayout p = activePanel();
         row(p, nav("Cockpit", v -> loadWeb("/")), nav("Kommunikation", v -> loadWeb("/communication")));
-        row(p, nav("Dateien", v -> loadWeb("/files")), nav("Chef", v -> loadWeb("/chef")));
+        row(p, nav("Dateien", v -> loadWeb("/files")), nav("Master ★", v -> loadWeb("/chef")));
         webView = new WebView(this);
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
@@ -1436,7 +1514,7 @@ public final class MainActivity extends Activity {
                 + "Endpoint: " + NexusConfig.endpoint(this) + "\n"
                 + "Sendestatus: " + NexusConfig.lastSendStatus(this) + "\n"
                 + "Widget: " + NexusConfig.lastWidgetStatus(this) + "\n"
-                + "Digi Dragon: Bridge 8777 | Lokal " + dragonStage() + " L" + companionLevel() + "\n"
+                + "DigiDragon: Bridge 8777 | Lokal " + dragonStage() + " L" + companionLevel() + "\n"
                 + "Theme: " + themeName();
     }
 
