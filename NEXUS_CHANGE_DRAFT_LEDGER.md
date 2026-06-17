@@ -29,6 +29,8 @@ This root file exists so the GitHub URL stays discoverable and no longer points 
 - A feature is not considered done until the route/API/UI was tested with evidence.
 - The file manager must be a first-class page, not only a link from the home screen.
 - The Index Chef must learn from reviewed decisions and must not silently move uncertain data.
+- Protected Core policy is binding: writing from protection class GELB upward requires documentation.
+- ROT writes require Vault/Backup, source, hash, classification, before/after check, healthcheck, and rollback note.
 
 ## Current Draft Items
 
@@ -57,7 +59,7 @@ This root file exists so the GitHub URL stays discoverable and no longer points 
 | DRAFT-021 | Communication Chef Focus | Add decision-learning profile and `/api/communication/priorities`. | live-verified | Priority API and focus cards verified. |
 | DRAFT-022 | Communication Widget | Add incoming-message widget page and Termux widget installer. | live-verified | `/widget/messages` and installer route verified. |
 | DRAFT-023 | Cost Control | Add hard OpenAI/KI cost lock through `nexus_ai_disabled.flag`. | live-verified | Paid worker routes return locked status while flag exists. |
-| DRAFT-024 | Termux Widget Install | Expose Android messages-widget installer through Nexus. | live-verified | `/termux/messages-widget-installer.sh` verified. |
+| DRAFT-024 | Termux Widget Install | Expose Android messages-widget installer through Nexus. | live-verified | Installer route verified. |
 | DRAFT-025 | Android Message Display | Add Termux/Termux:API notification display installer. | live-verified | Installer route verified. |
 | DRAFT-026 | Native Android Widget | Upgrade Nexus Collector Android app with real `AppWidgetProvider`. | live-download-verified | APK download route verified; phone placement pending. |
 | DRAFT-027 | Draft Visibility | Add first-class `/drafts` page and homepage link. | live-verified | `/drafts` HTTP 200 and root navigation verified. |
@@ -71,6 +73,7 @@ This root file exists so the GitHub URL stays discoverable and no longer points 
 | DRAFT-035 | Compact Space 3D UI | Switch homepage to darker compact space/3D visual system. | live-verified | Mobile layout and button measurements verified. |
 | DRAFT-036 | Nexi Core | Integrate `nexi_security_shield.py` for quarantine staging, UTF-8-sig handling, and local API data masking. | implemented-verified | Smoke test passed; DB quick check OK. |
 | DRAFT-037 | Nexi Core | Integrate `nexi_transaction_engine.py` for ACID locks, semantic cache, and circuit breaker. | implemented-verified | Transaction engine smoke test passed; DB quick check OK. |
+| DRAFT-038 | Governance | Define Protected Core and require documentation for writes from GELB upward. | implemented-docs | `docs/rules/NEXUS_PROTECTED_CORE_POLICY.md`, `docs/rules/WRITE_DOCUMENTATION_POLICY.md`, and change record exist in repo. |
 
 ## Recent Local Ledger Sections Present In Canonical File
 
