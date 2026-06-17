@@ -34,6 +34,17 @@ Keine neue Funktion ohne Modulplatz, Healthcheck und Rollback-Pfad.
 - Jede Bridge braucht eigenen Healthcheck.
 - Jeder Ausbau braucht vorher Doctor grün oder dokumentierten Grund.
 
+
+## Verbindliche Portkarte
+
+| Dienst | Port | Richtiger Test | Falsche Annahme |
+|---|---:|---|---|
+| Nexy Bridge | 8765 | http://127.0.0.1:8765/api/nexy/status | Digi Dragon auf 8765 |
+| Digi Dragon Bridge | 8777 | http://127.0.0.1:8777/api/dragon/status | Port 8766 oder 0.0.0.0 im Browser |
+
+Port 8766 ist aktuell kein offizieller Nexus-Dienst.
+0.0.0.0 ist nur eine Bind-Adresse und wird nicht als Browser-/App-Ziel verwendet.
+
 ## Ports
 
 - Nexy Bridge: 8765

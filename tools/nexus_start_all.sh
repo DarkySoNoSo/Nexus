@@ -44,7 +44,7 @@ start_service() {
 
 if [ -f backend/nexy/nexy_bridge_api.py ]; then
   start_service "nexy_bridge" \
-    'export NEXY_HOST="0.0.0.0"; export NEXY_PORT="8765"; python backend/nexy/nexy_bridge_api.py' \
+    'export NEXY_HOST="0.0.0.0"; export NEXY_PORT="8765"; python -u backend/nexy/nexy_bridge_api.py' \
     'http://127.0.0.1:8765/api/nexy/status'
 else
   echo "nexy_bridge: backend/nexy/nexy_bridge_api.py nicht vorhanden, übersprungen"
@@ -52,7 +52,7 @@ fi
 
 if [ -f backend/companion/dragon_bridge_api.py ]; then
   start_service "digi_dragon_bridge" \
-    'export DIGI_DRAGON_HOST="0.0.0.0"; export DIGI_DRAGON_PORT="8777"; python backend/companion/dragon_bridge_api.py' \
+    'export DIGI_DRAGON_HOST="0.0.0.0"; export DIGI_DRAGON_PORT="8777"; python -u backend/companion/dragon_bridge_api.py' \
     'http://127.0.0.1:8777/api/dragon/status'
 else
   echo "digi_dragon_bridge: backend/companion/dragon_bridge_api.py nicht vorhanden, übersprungen"
