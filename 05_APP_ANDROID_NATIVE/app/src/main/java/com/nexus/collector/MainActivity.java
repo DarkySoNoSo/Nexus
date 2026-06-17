@@ -256,7 +256,7 @@ public final class MainActivity extends Activity {
         LinearLayout p = activePanel();
 
         p.addView(section("BRIDGE"));
-        endpointInput = input("http://192.168.1.216:8765", true);
+        endpointInput = input("http://127.0.0.1:8765", true);
         endpointInput.setText(nexyBridgeBase());
         p.addView(endpointInput, card(8));
 
@@ -264,13 +264,23 @@ public final class MainActivity extends Activity {
         p.addView(out, card(8));
 
         row(p,
-                nav("Bridge speichern", v -> { setNexyBridgeBase(endpointInput.getText().toString()); out.setText("Nexy Bridge gespeichert:\n" + nexyBridgeBase()); }),
+                nav("Lokal 127", v -> useNexyBridge(out, "http://127.0.0.1:8765", "Lokal-Termux")),
+                nav("LAN 192", v -> useNexyBridge(out, "http://192.168.1.216:8765", "PC/LAN"))
+        );
+
+        row(p,
+                nav("Tailscale 100", v -> useNexyBridge(out, "http://100.107.24.67:8765", "Tailscale")),
                 nav("Status", v -> loadNexyEndpoint(out, "Nexy Status", "/api/nexy/status"))
         );
 
         row(p,
-                nav("Briefing", v -> loadNexyEndpoint(out, "Nexy Briefing", "/api/nexy/briefing")),
-                nav("Fokus", v -> loadNexyEndpoint(out, "Nexy Fokus", "/api/nexy/focus?limit=5"))
+                nav("Bridge speichern", v -> { setNexyBridgeBase(endpointInput.getText().toString()); out.setText("Nexy Bridge gespeichert:\n" + nexyBridgeBase() + "\n\nDrücke Status oder Briefing."); }),
+                nav("Briefing", v -> loadNexyEndpoint(out, "Nexy Briefing", "/api/nexy/briefing"))
+        );
+
+        row(p,
+                nav("Fokus", v -> loadNexyEndpoint(out, "Nexy Fokus", "/api/nexy/focus?limit=5")),
+                nav("Timeline", v -> loadNexyEndpoint(out, "Nexy Timeline", "/api/nexy/timeline?limit=8"))
         );
 
         p.addView(section("SUCHE"));
@@ -284,19 +294,152 @@ public final class MainActivity extends Activity {
 
         row(p,
                 nav("Safe-Start", v -> { nexySearchInput.setText("Safe-Start"); loadNexySearch(out); }),
-                nav("Timeline", v -> loadNexyEndpoint(out, "Nexy Timeline", "/api/nexy/timeline?limit=8"))
+                nav("Memory", v -> loadNexyEndpoint(out, "Nexy Memory", "/api/nexy/status"))
         );
     }
 
     private String nexyBridgeBase() {
-        return NexusConfig.prefs(this).getString("nexy_bridge_url", "http://192.168.1.216:8765");
+        return NexusConfig.prefs(this).getString("nexy_bridge_url", "http://127.0.0.1:8765");
     }
 
     private void setNexyBridgeBase(String value) {
         String v = value == null ? "" : value.trim();
         if (v.endsWith("/")) v = v.substring(0, v.length() - 1);
-        if (v.isEmpty()) v = "http://192.168.1.216:8765";
+        if (v.isEmpty()) v = "http://127.0.0.1:8765";
         NexusConfig.prefs(this).edit().putString("nexy_bridge_url", v).apply();
+    }
+
+    private void useNexyBridge(TextView out, String url, String label) {
+        setNexyBridgeBase(url);
+        if (endpointInput != null) endpointInput.setText(nexyBridgeBase());
+        if (out != null) {
+            out.setText("✅ Nexy Bridge gesetzt\n"
+                    + "Profil: " + label + "\n"
+                    + "URL: " + nexyBridgeBase() + "\n\n"
+                    + "Jetzt Status, Briefing, Fokus oder Suche drücken.");
+        }
+    }
+
+    private String nexyRender(String title, String body, String base) {
+        try {
+            JSONObject root = new JSONObject(body);
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("✅ ").append(title).append("\n");
+            sb.append("Quelle: ").append(host(base)).append("\n");
+
+            if (!root.optBoolean("ok", true)) {
+                sb.append("\n❌ Status: Fehler\n");
+                sb.append(root.optString("error", root.optString("message", "ok=false")));
+                return sb.toString().trim();
+            }
+
+            JSONObject briefing = root.optJSONObject("briefing");
+            if (briefing != null) {
+                JSONObject status = briefing.optJSONObject("status");
+                if (status != null) appendNexyCounts(sb, status);
+
+                appendNexyFocus(sb, briefing.optJSONArray("focus"));
+                appendNexyLessons(sb, briefing.optJSONArray("top_lessons"));
+                appendNexyFacts(sb, briefing.optJSONArray("facts"));
+                appendNexyTimeline(sb, briefing.optJSONArray("latest_timeline"));
+
+                return sb.toString().trim();
+            }
+
+            JSONObject counts = root.optJSONObject("counts");
+            if (counts != null) appendNexyCounts(sb, counts);
+
+            JSONArray items = root.optJSONArray("items");
+            if (items == null) items = root.optJSONArray("focus");
+            if (items == null) items = root.optJSONArray("latest_timeline");
+
+            if (items != null) appendNexyItems(sb, "Einträge", items, 8);
+
+            if (counts != null || items != null) return sb.toString().trim();
+
+            return sb.append("\n").append(cutKeepLines(body, 3000)).toString().trim();
+        } catch (Exception ex) {
+            return title + "\nQuelle: " + host(base) + "\n\n" + cutKeepLines(body, 3000);
+        }
+    }
+
+    private void appendNexyCounts(StringBuilder sb, JSONObject c) {
+        sb.append("\n📊 Speicher\n");
+        sb.append("Events: ").append(c.optInt("nexy_events", 0))
+                .append(" | Timeline: ").append(c.optInt("nexy_timeline", 0)).append("\n");
+        sb.append("Context: ").append(c.optInt("nexy_context", 0))
+                .append(" | Facts: ").append(c.optInt("nexy_facts", 0)).append("\n");
+        sb.append("Lessons: ").append(c.optInt("nexy_lessons", 0))
+                .append(" | Fokus: ").append(c.optInt("nexy_active_focus", 0)).append("\n");
+    }
+
+    private void appendNexyFocus(StringBuilder sb, JSONArray arr) {
+        if (arr == null || arr.length() == 0) return;
+        sb.append("\n🎯 Aktiver Fokus\n");
+        int max = Math.min(arr.length(), 6);
+        for (int i = 0; i < max; i++) {
+            JSONObject x = arr.optJSONObject(i);
+            if (x == null) continue;
+            sb.append(i + 1).append(". ").append(x.optString("focus_name", x.optString("name", "Fokus"))).append("\n");
+            String next = x.optString("next_action", "");
+            if (!next.isEmpty()) sb.append("   → ").append(cut(next, 150)).append("\n");
+            String desc = x.optString("description", "");
+            if (!desc.isEmpty()) sb.append("   ").append(cut(desc, 180)).append("\n");
+        }
+    }
+
+    private void appendNexyLessons(StringBuilder sb, JSONArray arr) {
+        if (arr == null || arr.length() == 0) return;
+        sb.append("\n🧠 Lessons\n");
+        int max = Math.min(arr.length(), 5);
+        for (int i = 0; i < max; i++) {
+            JSONObject x = arr.optJSONObject(i);
+            if (x == null) continue;
+            String lesson = x.optString("lesson", x.optString("title", ""));
+            String rule = x.optString("rule", "");
+            if (!lesson.isEmpty()) sb.append("- ").append(cut(lesson, 180)).append("\n");
+            if (!rule.isEmpty()) sb.append("  Regel: ").append(cut(rule, 160)).append("\n");
+        }
+    }
+
+    private void appendNexyFacts(StringBuilder sb, JSONArray arr) {
+        if (arr == null || arr.length() == 0) return;
+        sb.append("\n📌 Facts\n");
+        int max = Math.min(arr.length(), 6);
+        for (int i = 0; i < max; i++) {
+            JSONObject x = arr.optJSONObject(i);
+            if (x == null) continue;
+            String fact = x.optString("statement", x.optString("fact", ""));
+            if (!fact.isEmpty()) sb.append("- ").append(cut(fact, 190)).append("\n");
+        }
+    }
+
+    private void appendNexyTimeline(StringBuilder sb, JSONArray arr) {
+        if (arr == null || arr.length() == 0) return;
+        sb.append("\n🕒 Timeline\n");
+        int max = Math.min(arr.length(), 6);
+        for (int i = 0; i < max; i++) {
+            JSONObject x = arr.optJSONObject(i);
+            if (x == null) continue;
+            String t = x.optString("ts", x.optString("created_at", ""));
+            String text = x.optString("title", x.optString("summary", x.optString("text", "")));
+            sb.append("- ");
+            if (!t.isEmpty()) sb.append(cut(t, 19)).append(" ");
+            sb.append(cut(text, 180)).append("\n");
+        }
+    }
+
+    private void appendNexyItems(StringBuilder sb, String label, JSONArray arr, int limit) {
+        if (arr == null || arr.length() == 0) return;
+        sb.append("\n📋 ").append(label).append("\n");
+        int max = Math.min(arr.length(), limit);
+        for (int i = 0; i < max; i++) {
+            JSONObject x = arr.optJSONObject(i);
+            if (x == null) continue;
+            String text = x.optString("title", x.optString("focus_name", x.optString("summary", x.optString("text", x.toString()))));
+            sb.append(i + 1).append(". ").append(cut(text, 220)).append("\n");
+        }
     }
 
     private void loadNexySearch(TextView out) {
@@ -318,7 +461,7 @@ public final class MainActivity extends Activity {
         new Thread(() -> {
             try {
                 String body = httpGet(base + path);
-                String text = title + "\nQuelle: " + host(base) + "\n\n" + cutKeepLines(body, 6500);
+                String text = nexyRender(title, body, base);
                 runOnUiThread(() -> { if (PAGE_NEXY.equals(currentPage)) out.setText(text); });
             } catch (Exception ex) {
                 String err = "Nexy nicht erreichbar.\nBridge: " + base + "\nFehler: " + ex.getClass().getSimpleName() + " " + cutKeepLines(ex.getMessage(), 300)
@@ -1118,6 +1261,8 @@ public final class MainActivity extends Activity {
     private TextView logBox(String text) {
         TextView v = label(text, 13, false, Color.rgb(232, 226, 218));
         v.setPadding(dp(10), dp(10), dp(10), dp(10));
+        v.setLineSpacing(dp(2), 1.08f);
+        v.setTextIsSelectable(true);
         v.setBackground(box(14, Color.rgb(8, 9, 9), accentDark()));
         return v;
     }
