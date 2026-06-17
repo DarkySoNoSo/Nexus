@@ -731,25 +731,12 @@ public final class MainActivity extends Activity {
         hero.addView(label("DigiDragon", 30, true, Color.WHITE));
 
         TextView scene = label(
-                "        ✦  MINI-HÖHLE  ✦
-
-"
-                        + "     ⛓        🔥        ⛓
-"
-                        + "        /\_/\\
-"
-                        + "     __/  ◉ ◉  \__
-"
-                        + "    /  \  ▾▾▾  /  \\
-"
-                        + "       /|  🐉  |\\
-"
-                        + "      /_|_____|_\\
-
-"
-                        + "  Nest aus schwarzem Stein, Glutkristallen und Runen.
-"
-                        + "  Klein genug zum Wandern. Düster. Rot-Schwarz. Wachsam.",
+                "✦ MINI-HÖHLE ✦\\n\\n"
+                        + "Glutkristalle · schwarzer Stein · rote Runen\\n"
+                        + "Nestbereich: dunkel, warm, geschützt\\n"
+                        + "DigiDragon: klein, rot-schwarz, wachsam\\n\\n"
+                        + "Der Drache hat hier Platz zum Wandern.\\n"
+                        + "Arena und Training sind getrennte Aktionen.",
                 15,
                 true,
                 Color.rgb(238, 218, 198)
@@ -768,13 +755,9 @@ public final class MainActivity extends Activity {
         p.addView(hero, card(0));
 
         p.addView(section("DRACHENSTATUS"));
-        TextView out = logBox("DigiDragon bereit.
-"
-                + "Bridge: " + dragonBridgeBase() + "
-"
-                + "Szene: Minihöhle / Nest / Feuer-Dunkel
-
-"
+        TextView out = logBox("DigiDragon bereit.\\n"
+                + "Bridge: " + dragonBridgeBase() + "\\n"
+                + "Szene: Minihöhle / Nest / Feuer-Dunkel\\n\\n"
                 + "Drücke Status, Training oder Arena.");
         hero.setTag(out);
         p.addView(out, card(8));
@@ -808,11 +791,8 @@ public final class MainActivity extends Activity {
         row(p,
                 nav("Bridge speichern", v -> {
                     setDragonBridgeBase(endpointInput.getText().toString());
-                    out.setText("DigiDragon Bridge gespeichert:
-" + dragonBridgeBase()
-                            + "
-
-Drücke Status oder Arena.");
+                    out.setText("DigiDragon Bridge gespeichert:\\n" + dragonBridgeBase()
+                            + "\\n\\nDrücke Status oder Arena.");
                 }),
                 nav("Codex", v -> loadDragonEndpoint(out, "DigiDragon Codex", "/api/dragon/codex"))
         );
