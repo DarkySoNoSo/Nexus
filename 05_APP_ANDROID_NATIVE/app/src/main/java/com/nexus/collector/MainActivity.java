@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
@@ -64,20 +65,24 @@ public final class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
-        enableFullscreen();
-        setContentView(buildUi());
-        showHome();
+        installCrashGuard();
+        try {
+            safeFullscreen();
+            setContentView(buildUi());
+            showHome();
+        } catch (Throwable t) {
+            showCrashScreen("onCreate", t);
+        }
     }
 
     @Override protected void onResume() {
         super.onResume();
-        enableFullscreen();
-        if (PAGE_HOME.equals(currentPage)) showHome();
+        safeFullscreen();
     }
 
     @Override public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) enableFullscreen();
+        if (hasFocus) safeFullscreen();
     }
 
     @Override public void onBackPressed() {
@@ -86,24 +91,68 @@ public final class MainActivity extends Activity {
         super.onBackPressed();
     }
 
+    private void installCrashGuard() {
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            try {
+                runOnUiThread(() -> showCrashScreen("uncaught:" + thread.getName(), throwable));
+            } catch (Throwable ignored) {}
+        });
+    }
+
+    private void safeFullscreen() {
+        try {
+            enableFullscreen();
+        } catch (Throwable t) {
+            try { Log.w("NexusMain", "Fullscreen disabled after failure", t); } catch (Throwable ignored) {}
+        }
+    }
+
     private void enableFullscreen() {
         Window window = getWindow();
+        if (window == null) return;
         if (Build.VERSION.SDK_INT >= 30) {
-            window.setDecorFitsSystemWindows(false);
-            WindowInsetsController controller = window.getInsetsController();
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
+            window.setDecorFitsSystemWindows(true);
         }
-        window.getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        );
+        View decor = window.getDecorView();
+        if (decor != null) {
+            decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        }
+    }
+
+    private void showCrashScreen(String phase, Throwable t) {
+        try {
+            String report = "NEXUS SAFE CRASHSCREEN
+"
+                    + "Phase: " + phase + "
+"
+                    + "Android SDK: " + Build.VERSION.SDK_INT + "
+"
+                    + "Device: " + Build.MANUFACTURER + " " + Build.MODEL + "
+
+"
+                    + Log.getStackTraceString(t);
+
+            try { Log.e("NexusCrash", report, t); } catch (Throwable ignored) {}
+
+            ScrollView scroll = new ScrollView(this);
+            scroll.setFillViewport(true);
+            scroll.setBackgroundColor(Color.BLACK);
+
+            TextView out = new TextView(this);
+            out.setText(report);
+            out.setTextColor(Color.WHITE);
+            out.setTextSize(12);
+            out.setPadding(dp(14), dp(14), dp(14), dp(14));
+
+            scroll.addView(out);
+            setContentView(scroll);
+        } catch (Throwable ignored) {
+            TextView out = new TextView(this);
+            out.setText("NEXUS STARTFEHLER: " + t.getClass().getName() + ": " + t.getMessage());
+            out.setTextColor(Color.WHITE);
+            out.setBackgroundColor(Color.BLACK);
+            setContentView(out);
+        }
     }
 
     private View buildUi() {
@@ -158,7 +207,7 @@ public final class MainActivity extends Activity {
         if (subtitle != null && !subtitle.isEmpty()) pagePanel.addView(label(subtitle, 13, false, Color.rgb(226, 220, 212)));
         content.addView(pagePanel, card(PAGE_HOME.equals(page) ? 0 : 8));
         if (mainScroll != null) mainScroll.post(() -> mainScroll.scrollTo(0, 0));
-        enableFullscreen();
+        safeFullscreen();
     }
 
     private LinearLayout activePanel() {
