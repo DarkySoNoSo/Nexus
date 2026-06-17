@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="DigiPad">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>DigiPad</title>
+  <link rel="manifest" href="/digipad/manifest.json">
+  <link rel="stylesheet" href="/digipad/styles.css">
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">DigiPad Container</div>
+        <h1>Fiona-Pad</h1>
+        <p>Geschützter DigiDragon-Client. Nur Port 8788. Keine Nexus-Privatbereiche.</p>
+      </div>
+      <div class="orb">◆</div>
+    </section>
+
+    <section class="card">
+      <h2>Verbindung</h2>
+      <label>API-Adresse</label>
+      <input id="baseUrl" placeholder="http://192.168.x.x:8788">
+      <label>Token</label>
+      <input id="token" placeholder="DigiPad Token" type="password">
+      <button id="saveBtn">Speichern</button>
+      <p class="hint">Token liegt auf Patricks Host lokal in <code>.run/fiona_digipad_token.txt</code>.</p>
+    </section>
+
+    <section class="dragon">
+      <div class="cave">
+        <div class="dragon-eye"></div>
+        <div class="dragon-body">🐉</div>
+        <div class="glow"></div>
+      </div>
+      <div>
+        <h2>DigiDragon</h2>
+        <p>Minihöhle, Nest, Training, Arena und Entwicklung.</p>
+      </div>
+    </section>
+
+    <section class="grid">
+      <button data-get="/api/pad/fiona/status">Status</button>
+      <button data-post="/api/pad/fiona/feed" data-body="{}">Füttern</button>
+      <button data-post="/api/pad/fiona/care" data-body="{}">Pflegen</button>
+      <button data-post="/api/pad/fiona/train" data-body='{"training_type":"focus"}'>Training Fokus</button>
+      <button data-post="/api/pad/fiona/train" data-body='{"training_type":"speed"}'>Training Speed</button>
+      <button data-post="/api/pad/fiona/freefight" data-body="{}">Freikampf</button>
+      <button data-post="/api/pad/fiona/arena" data-body="{}">Arena</button>
+      <button data-post="/api/pad/fiona/evolve" data-body="{}">Evolution</button>
+      <button data-get="/api/pad/fiona/battle/export">Battle Export</button>
+    </section>
+
+    <section class="card">
+      <h2>Ausgabe</h2>
+      <pre id="output">Bereit. API und Token speichern, dann Status drücken.</pre>
+    </section>
+  </main>
+
+  <script src="/digipad/app.js"></script>
+</body>
+</html>

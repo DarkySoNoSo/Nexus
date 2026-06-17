@@ -1,0 +1,10 @@
+{
+  "name": "DigiPad",
+  "short_name": "DigiPad",
+  "start_url": "/digipad",
+  "display": "standalone",
+  "background_color": "#050607",
+  "theme_color": "#050607",
+  "description": "Geschützter DigiPad Remote Client",
+  "icons": []
+}

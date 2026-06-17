@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
+
+DIGIPAD_WEB_DIR = Path(__file__).resolve().parent / "digipad_web"
 
 from pad_container_db import (
     apply_action,
@@ -31,6 +34,20 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         print("%s - - [%s] %s" % (self.client_address[0], self.log_date_time_string(), fmt % args), flush=True)
+
+    def send_static(self, path: str, content_type: str):
+        try:
+            body = Path(path).read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, X-DigiPad-Token")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except FileNotFoundError:
+            self.send_json(404, {"ok": False, "error": "static file not found"})
 
     def send_json(self, status: int, data):
         body = json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
@@ -70,6 +87,26 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path
 
         try:
+            if path in ("/digipad", "/digipad/"):
+                self.send_static(str(DIGIPAD_WEB_DIR / "index.html"), "text/html; charset=utf-8")
+                return
+
+            if path == "/digipad/styles.css":
+                self.send_static(str(DIGIPAD_WEB_DIR / "styles.css"), "text/css; charset=utf-8")
+                return
+
+            if path == "/digipad/app.js":
+                self.send_static(str(DIGIPAD_WEB_DIR / "app.js"), "application/javascript; charset=utf-8")
+                return
+
+            if path == "/digipad/manifest.json":
+                self.send_static(str(DIGIPAD_WEB_DIR / "manifest.json"), "application/manifest+json; charset=utf-8")
+                return
+
+            if path == "/digipad/sw.js":
+                self.send_static(str(DIGIPAD_WEB_DIR / "sw.js"), "application/javascript; charset=utf-8")
+                return
+
             if path in ("/health", "/api/pad/health"):
                 self.send_json(200, {"ok": True, "service": "digipad_container", "version": "0.1", "port": int(os.getenv("DIGIPAD_PORT", "8788"))})
                 return
