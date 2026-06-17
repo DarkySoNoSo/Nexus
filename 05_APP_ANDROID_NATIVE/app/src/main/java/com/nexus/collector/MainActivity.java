@@ -212,7 +212,7 @@ public final class MainActivity extends Activity {
         titleRow.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout titleCol = vertical();
         topTitle = label("NEXUS", 23, true, Color.WHITE);
-        topSub = label("Mobile Chef-Zentrale", 12, false, sub());
+        topSub = label("Mobile Master-Zentrale", 12, false, sub());
         titleCol.addView(topTitle);
         titleCol.addView(topSub);
         titleRow.addView(titleCol, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
@@ -237,7 +237,7 @@ public final class MainActivity extends Activity {
         digipadTokenInput = null;
         content.removeAllViews();
         topTitle.setText(BuildConfig.DIGIPAD_ONLY ? "DIGIPAD" : (PAGE_HOME.equals(page) ? "NEXUS" : title.toUpperCase()));
-        topSub.setText(BuildConfig.DIGIPAD_ONLY ? "Remote Client" : (PAGE_HOME.equals(page) ? "Mobile Chef-Zentrale" : "Aktive Seite: " + title));
+        topSub.setText(BuildConfig.DIGIPAD_ONLY ? "Remote Client" : (PAGE_HOME.equals(page) ? "Mobile Master-Zentrale" : "Aktive Seite: " + title));
 
         if (!BuildConfig.DIGIPAD_ONLY && !PAGE_HOME.equals(page)) {
             LinearLayout back = panel();
@@ -258,30 +258,34 @@ public final class MainActivity extends Activity {
     }
 
     private void showHome() {
-        if (BuildConfig.DIGIPAD_ONLY) { showDigiPadPage(); return; }
-        clearPage(PAGE_HOME, "Zentrale", "Nexus im Überblick: Master ★, Nexy, DigiDragon, Nachrichten, Dateien und Zeitstrahl.");
+        clearPage(PAGE_HOME, "Zentrale", "Kompakte Master-Zentrale: Kern, Companion, Eingang und System.");
         LinearLayout p = activePanel();
-        p.addView(section("VERBINDUNGEN"));
-        p.addView(label(accessText(), 13, true, Color.rgb(238, 232, 224)));
-        row(p, nav("Verbindung prüfen", v -> testConnection()), nav("Collector", v -> showCollectorPage()));
+
+        p.addView(section("KERN"));
+        p.addView(label("Safe-Start aktiv: keine automatische Serverabfrage beim Oeffnen.", 13, true, Color.rgb(238, 232, 224)));
+        p.addView(label(accessText(), 12, false, Color.rgb(215, 213, 208)));
+        row(p, nav("Master ★", v -> showChefPage()), nav("Nexy", v -> showNexyPage()));
+        row(p, nav("Zeitstrahl", v -> showTimelinePage()), nav("Dateien", v -> showFilesPage()));
+
+        p.addView(section("COMPANION"));
+        LinearLayout dragon = miniCard();
+        dragon.addView(label("DigiDragon", 20, true, Color.WHITE));
+        dragon.addView(label("Mini-Hoehle - Nest - Training - Arena", 12, false, Color.rgb(238, 218, 198)));
+        dragon.addView(label(companionSummary(), 12, false, Color.rgb(220, 214, 205)));
+        row(dragon, nav("DigiDragon", v -> showCompanionPage()), nav("DigiPad", v -> showDigiPadPage()));
+        p.addView(dragon, card(8));
+
+        p.addView(section("EINGANG"));
+        row(p, nav("Nachrichten", v -> showMessagesPage()), nav("Collector", v -> showCollectorPage()));
         row(p, nav("Benachrichtigungen", v -> openNotificationAccess()), nav("SMS erlauben", v -> requestSms()));
 
-        p.addView(section("BEREICHE"));
-        row(p, nav("Master ★", v -> showChefPage()), nav("Nachrichten", v -> showMessagesPage()));
-        row(p, nav("Dateien", v -> showFilesPage()), nav("Zeitstrahl", v -> showTimelinePage()));
-        row(p, nav("DigiDragon", v -> showCompanionPage()), nav("Nest", v -> showCompanionPage()));
-        row(p, nav("Collector", v -> showCollectorPage()), nav("Systemstatus", v -> showStatusOnly()));
-        row(p, nav("Web", v -> showWebPage("/")), nav("Widget aktualisieren", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }));
-        row(p, nav("Nexy", v -> showNexyPage()), nav("Status", v -> showStatusOnly()));
-        row(p, nav("Aktualisieren", v -> showHome()), nav("Nexy Briefing", v -> showNexyPage()));
-
-        TextView snapshot = logBox("Start bereit. Keine automatische Serverabfrage beim Öffnen.\nLade gezielt: Nexy, DigiDragon, Master ★, Nachrichten, Dateien oder Zeitstrahl.");
-        p.addView(snapshot, card(8));
         p.addView(section("SYSTEM"));
         p.addView(label(status(), 12, false, Color.rgb(215, 213, 208)));
+        row(p, nav("Verbindung pruefen", v -> testConnection()), nav("Systemstatus", v -> showStatusOnly()));
+        row(p, nav("Web", v -> showWebPage("/")), nav("Widget", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }));
+
         p.addView(section("DESIGN"));
-        row(p, nav("Cyberblau", v -> setTheme("blue")), nav("Neon Gruen", v -> setTheme("green")));
-        row(p, nav("Orange", v -> setTheme("orange")), nav("Zentrale", v -> showHome()));
+        row(p, nav("Orange", v -> setTheme("orange")), nav("Cyberblau", v -> setTheme("blue")));
     }
 
 
@@ -1191,7 +1195,7 @@ public final class MainActivity extends Activity {
             card.addView(label(actionOf(item), 11, true, orange()));
             card.addView(label(cut(finalPreview, 310), 13, false, Color.rgb(232, 226, 216)));
             row(card, nav("Sehr wichtig", v -> decide(finalEventId, "very_important")), nav("Erledigt", v -> decide(finalEventId, "done")));
-            row(card, nav("Zeitstrahl", v -> decide(finalEventId, "timeline_focus")), nav("Chef-Kontext", v -> putContext(finalSender, finalPreview)));
+            row(card, nav("Zeitstrahl", v -> decide(finalEventId, "timeline_focus")), nav("Master-Kontext", v -> putContext(finalSender, finalPreview)));
             list.addView(card, card(8));
             added++;
         }
@@ -1253,7 +1257,7 @@ public final class MainActivity extends Activity {
         showChefPage();
         chefInput.setText("Kontext zu Nachricht von " + sender + ":\n" + cut(preview, 220) + "\n\nMeine Einordnung: ");
         chefInput.requestFocus();
-        chefLog.setText("Kontext eintragen und an Chef senden.");
+        chefLog.setText("Kontext eintragen und an Master senden.");
     }
 
     private void decide(String eventId, String action) {
