@@ -47,6 +47,7 @@ public final class MainActivity extends Activity {
     private static final String PAGE_FILES = "files";
     private static final String PAGE_TIMELINE = "timeline";
     private static final String PAGE_COMPANION = "companion";
+    private static final String PAGE_DIGIPAD = "digipad";
     private static final String PAGE_COLLECTOR = "collector";
     private static final String PAGE_NEXY = "nexy";
     private static final String PAGE_WEB = "web";
@@ -60,6 +61,7 @@ public final class MainActivity extends Activity {
     private EditText endpointInput;
     private EditText messageSearch;
     private EditText nexySearchInput;
+    private EditText digipadTokenInput;
     private WebView webView;
     private String currentPage = PAGE_HOME;
 
@@ -69,7 +71,7 @@ public final class MainActivity extends Activity {
         try {
             safeFullscreen();
             setContentView(buildUi());
-            showHome();
+            if (BuildConfig.DIGIPAD_ONLY) showDigiPadPage(); else showHome();
         } catch (Throwable t) {
             showCrashScreen("onCreate", t);
         }
@@ -86,6 +88,7 @@ public final class MainActivity extends Activity {
     }
 
     @Override public void onBackPressed() {
+        if (BuildConfig.DIGIPAD_ONLY) { showDigiPadPage(); return; }
         if (webView != null && webView.canGoBack()) { webView.goBack(); return; }
         if (!PAGE_HOME.equals(currentPage)) { showHome(); return; }
         super.onBackPressed();
@@ -185,7 +188,7 @@ public final class MainActivity extends Activity {
         titleCol.addView(topTitle);
         titleCol.addView(topSub);
         titleRow.addView(titleCol, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        Button menu = nav("Menue", v -> showHome());
+        Button menu = BuildConfig.DIGIPAD_ONLY ? nav("DigiPad", v -> showDigiPadPage()) : nav("Menue", v -> showHome());
         titleRow.addView(menu, new LinearLayout.LayoutParams(dp(92), LinearLayout.LayoutParams.WRAP_CONTENT));
         header.addView(titleRow);
         root.addView(header, card(0));
@@ -203,11 +206,12 @@ public final class MainActivity extends Activity {
         chefLog = null;
         messageSearch = null;
         nexySearchInput = null;
+        digipadTokenInput = null;
         content.removeAllViews();
-        topTitle.setText(PAGE_HOME.equals(page) ? "NEXUS" : title.toUpperCase());
-        topSub.setText(PAGE_HOME.equals(page) ? "Mobile Chef-Zentrale" : "Aktive Seite: " + title);
+        topTitle.setText(BuildConfig.DIGIPAD_ONLY ? "DIGIPAD" : (PAGE_HOME.equals(page) ? "NEXUS" : title.toUpperCase()));
+        topSub.setText(BuildConfig.DIGIPAD_ONLY ? "Remote Client" : (PAGE_HOME.equals(page) ? "Mobile Chef-Zentrale" : "Aktive Seite: " + title));
 
-        if (!PAGE_HOME.equals(page)) {
+        if (!BuildConfig.DIGIPAD_ONLY && !PAGE_HOME.equals(page)) {
             LinearLayout back = panel();
             row(back, nav("Zurueck", v -> showHome()), nav("Menue", v -> showHome()));
             content.addView(back, card(0));
@@ -226,6 +230,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showHome() {
+        if (BuildConfig.DIGIPAD_ONLY) { showDigiPadPage(); return; }
         clearPage(PAGE_HOME, "Uebersicht", "Nur Menue, Zugriffe, Kurzlage und Status. Jede Funktion oeffnet eine eigene Seite.");
         LinearLayout p = activePanel();
         p.addView(section("ZUGAENGE"));
@@ -236,7 +241,8 @@ public final class MainActivity extends Activity {
         p.addView(section("MENUE"));
         row(p, nav("Chef", v -> showChefPage()), nav("Nachrichten", v -> showMessagesPage()));
         row(p, nav("Dateien", v -> showFilesPage()), nav("Zeitstrahl", v -> showTimelinePage()));
-        row(p, nav("Digi Dragon", v -> showCompanionPage()), nav("Collector", v -> showCollectorPage()));
+        row(p, nav("Digi Dragon", v -> showCompanionPage()), nav("DigiPad", v -> showDigiPadPage()));
+        row(p, nav("Collector", v -> showCollectorPage()), nav("Collector Status", v -> showStatusOnly()));
         row(p, nav("Web", v -> showWebPage("/")), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }));
         row(p, nav("Nexy", v -> showNexyPage()), nav("Status", v -> showStatusOnly()));
         row(p, nav("Seite neu", v -> showHome()), nav("Nexy Briefing", v -> showNexyPage()));
@@ -471,6 +477,217 @@ public final class MainActivity extends Activity {
         }).start();
     }
 
+
+
+    private void showDigiPadPage() {
+        clearPage(PAGE_DIGIPAD, "DigiPad", "Geschützter Remote-Client für das Fiona-Profil über die DigiPad Container API.");
+        LinearLayout p = activePanel();
+
+        p.addView(section("VERBINDUNG"));
+        endpointInput = input("http://192.168.x.x:8788 oder Tailscale:8788", true);
+        endpointInput.setText(digipadBase());
+        p.addView(endpointInput, card(8));
+
+        digipadTokenInput = input("DigiPad Token", true);
+        digipadTokenInput.setText(digipadToken());
+        p.addView(digipadTokenInput, card(8));
+
+        TextView out = logBox("DigiPad bereit.\nProfil: fiona\nAPI: " + digipadBase()
+                + "\nToken wird lokal auf diesem Gerät gespeichert.\nKeine Nexy-, Chef-, Collector-, Nachrichten- oder Datei-Endpunkte.");
+        p.addView(out, card(8));
+
+        row(p,
+                nav("Speichern", v -> saveDigiPadSettings(out)),
+                nav("Status", v -> loadDigiPadEndpoint(out, "Fiona Status", "/api/pad/fiona/status"))
+        );
+
+        row(p,
+                nav("Füttern", v -> postDigiPadAction(out, "Füttern", "/api/pad/fiona/feed", "{}")),
+                nav("Pflegen", v -> postDigiPadAction(out, "Pflegen", "/api/pad/fiona/care", "{}"))
+        );
+
+        row(p,
+                nav("Training Fokus", v -> postDigiPadAction(out, "Training Fokus", "/api/pad/fiona/train", "{\"training_type\":\"focus\"}")),
+                nav("Training Speed", v -> postDigiPadAction(out, "Training Speed", "/api/pad/fiona/train", "{\"training_type\":\"speed\"}"))
+        );
+
+        row(p,
+                nav("Freikampf", v -> postDigiPadAction(out, "Freikampf", "/api/pad/fiona/freefight", "{}")),
+                nav("Arena", v -> postDigiPadAction(out, "Arena", "/api/pad/fiona/arena", "{}"))
+        );
+
+        row(p,
+                nav("Evolution", v -> postDigiPadAction(out, "Evolution", "/api/pad/fiona/evolve", "{}")),
+                nav("Battle Export", v -> loadDigiPadEndpoint(out, "Battle Export", "/api/pad/fiona/battle/export"))
+        );
+
+        p.addView(section("HINWEIS"));
+        p.addView(label("Fionas Handy nutzt später die WLAN- oder Tailscale-Adresse von Patricks Host auf Port 8788. 127.0.0.1 funktioniert nur auf dem Gerät, auf dem Termux läuft.", 12, false, Color.rgb(220, 214, 206)));
+    }
+
+    private String digipadBase() {
+        return NexusConfig.prefs(this).getString("digipad_base_url", "http://127.0.0.1:8788");
+    }
+
+    private String digipadToken() {
+        return NexusConfig.prefs(this).getString("digipad_fiona_token", "");
+    }
+
+    private void setDigiPadBase(String value) {
+        String v = value == null ? "" : value.trim();
+        if (v.endsWith("/")) v = v.substring(0, v.length() - 1);
+        if (v.isEmpty()) v = "http://127.0.0.1:8788";
+        NexusConfig.prefs(this).edit().putString("digipad_base_url", v).apply();
+    }
+
+    private void setDigiPadToken(String value) {
+        String v = value == null ? "" : value.trim();
+        NexusConfig.prefs(this).edit().putString("digipad_fiona_token", v).apply();
+    }
+
+    private void saveDigiPadSettings(TextView out) {
+        if (endpointInput != null) setDigiPadBase(endpointInput.getText().toString());
+        if (digipadTokenInput != null) setDigiPadToken(digipadTokenInput.getText().toString());
+        out.setText("DigiPad gespeichert.\nAPI: " + digipadBase()
+                + "\nToken: " + (digipadToken().isEmpty() ? "fehlt" : "gespeichert")
+                + "\n\nJetzt Status drücken.");
+    }
+
+    private boolean requireDigiPadAuth(TextView out) {
+        if (endpointInput != null) setDigiPadBase(endpointInput.getText().toString());
+        if (digipadTokenInput != null) setDigiPadToken(digipadTokenInput.getText().toString());
+
+        if (digipadToken().isEmpty()) {
+            out.setText("DigiPad Token fehlt.\nToken auf Patricks Host liegt lokal in:\n.run/fiona_digipad_token.txt\n\nToken einmal auf Fionas Handy eintragen und speichern.");
+            return false;
+        }
+        return true;
+    }
+
+    private void loadDigiPadEndpoint(TextView out, String title, String path) {
+        if (!requireDigiPadAuth(out)) return;
+        String base = digipadBase();
+        String token = digipadToken();
+        out.setText("Lade " + title + "...\n" + base + path);
+        new Thread(() -> {
+            try {
+                String body = httpGetToken(base + path, "X-DigiPad-Token", token);
+                String text = digipadRender(title, body, base);
+                runOnUiThread(() -> { if (PAGE_DIGIPAD.equals(currentPage)) out.setText(text); });
+            } catch (Exception ex) {
+                String err = "DigiPad nicht erreichbar.\n"
+                        + "API: " + base + "\n"
+                        + "Fehler: " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 180) + "\n\n"
+                        + "Prüfen: Port 8788, WLAN/Tailscale, Token.";
+                runOnUiThread(() -> { if (PAGE_DIGIPAD.equals(currentPage)) out.setText(err); });
+            }
+        }).start();
+    }
+
+    private void postDigiPadAction(TextView out, String title, String path, String jsonBody) {
+        if (!requireDigiPadAuth(out)) return;
+        String base = digipadBase();
+        String token = digipadToken();
+        out.setText("Sende " + title + "...\n" + base + path);
+        new Thread(() -> {
+            try {
+                String body = httpPostJsonToken(base + path, jsonBody, "X-DigiPad-Token", token);
+                String text = digipadRender(title, body, base);
+                runOnUiThread(() -> { if (PAGE_DIGIPAD.equals(currentPage)) out.setText(text); });
+            } catch (Exception ex) {
+                String err = "DigiPad-Aktion fehlgeschlagen.\n"
+                        + "Aktion: " + title + "\n"
+                        + "API: " + base + "\n"
+                        + "Fehler: " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 180);
+                runOnUiThread(() -> { if (PAGE_DIGIPAD.equals(currentPage)) out.setText(err); });
+            }
+        }).start();
+    }
+
+    private String digipadRender(String title, String body, String base) {
+        try {
+            JSONObject root = new JSONObject(body);
+            StringBuilder sb = new StringBuilder();
+            sb.append(title).append("\n");
+            sb.append("Quelle: ").append(host(base)).append("\n\n");
+
+            if (!root.optBoolean("ok", true)) {
+                sb.append("Status: Fehler\n");
+                sb.append(root.optString("error", root.optString("message", "ok=false")));
+                return sb.toString().trim();
+            }
+
+            String msg = root.optString("message", "");
+            if (!msg.isEmpty()) sb.append(msg).append("\n\n");
+
+            JSONObject profile = root.optJSONObject("profile");
+            if (profile != null) {
+                sb.append("Profil: ").append(profile.optString("display_name", profile.optString("profile_id", "fiona"))).append("\n");
+                sb.append("Zugriff: ").append(profile.optString("access_level", "digipad_only")).append("\n\n");
+            }
+
+            JSONObject pet = root.optJSONObject("pet");
+            if (pet == null) {
+                JSONObject status = root.optJSONObject("status");
+                if (status != null) pet = status.optJSONObject("pet");
+            }
+
+            if (pet != null) {
+                sb.append("Pet: ").append(pet.optString("name", "Fiona-Drache")).append("\n");
+                sb.append("Stufe: ").append(pet.optString("stage_label", pet.optString("stage", "?"))).append("\n");
+                sb.append("Level: ").append(pet.optInt("level", 0)).append(" | XP: ").append(pet.optInt("xp", 0)).append("\n");
+                sb.append("Pfad: ").append(pet.optString("evolution_path", "unknown")).append("\n\n");
+                sb.append("Zustand\n");
+                sb.append("Energie: ").append(pet.optInt("energy", 0)).append(" | Stimmung: ").append(pet.optInt("mood", 0)).append("\n");
+                sb.append("Bindung: ").append(pet.optInt("bond", 0)).append(" | Kampfbereit: ").append(pet.optInt("battle_ready", 0)).append("\n");
+                sb.append("HP: ").append(pet.optInt("hp", 0)).append("/").append(pet.optInt("max_hp", 0)).append("\n\n");
+                sb.append("Battle Rating: ").append(pet.optInt("battle_rating", 0)).append("\n\n");
+
+                JSONArray attacks = pet.optJSONArray("attacks");
+                if (attacks != null && attacks.length() > 0) {
+                    sb.append("Attacken\n");
+                    int max = Math.min(attacks.length(), 7);
+                    for (int i = 0; i < max; i++) {
+                        JSONObject a = attacks.optJSONObject(i);
+                        if (a == null) continue;
+                        sb.append("- ").append(a.optString("name", a.optString("id", "?")))
+                                .append(" [").append(a.optString("element", "?"))
+                                .append("/").append(a.optString("class", "?")).append("]");
+                        if (a.optInt("equipped", 0) == 1) sb.append(" aktiv");
+                        sb.append("\n");
+                    }
+                }
+            }
+
+            JSONArray unlocks = root.optJSONArray("unlocks");
+            if (unlocks != null && unlocks.length() > 0) {
+                sb.append("\nNeue Freischaltungen\n");
+                for (int i = 0; i < unlocks.length(); i++) sb.append("- ").append(unlocks.optString(i)).append("\n");
+            }
+
+            JSONArray levelNotes = root.optJSONArray("level_notes");
+            if (levelNotes != null && levelNotes.length() > 0) {
+                sb.append("\nLevel\n");
+                for (int i = 0; i < levelNotes.length(); i++) sb.append("- ").append(levelNotes.optString(i)).append("\n");
+            }
+
+            String code = root.optString("code", "");
+            if (!code.isEmpty()) {
+                sb.append("\nBattle Code\n");
+                sb.append(code).append("\n");
+                JSONObject snapshot = root.optJSONObject("snapshot");
+                if (snapshot != null) {
+                    sb.append("Snapshot: ").append(snapshot.optString("pet_name", "Pet"))
+                            .append(" L").append(snapshot.optInt("level", 0))
+                            .append(" BR ").append(snapshot.optInt("battle_rating", 0)).append("\n");
+                }
+            }
+
+            return sb.toString().trim();
+        } catch (Exception ex) {
+            return title + "\nQuelle: " + host(base) + "\n\n" + cutKeepLines(body, 5000);
+        }
+    }
 
     private void showStatusOnly() {
         clearPage(PAGE_HOME, "Status", "Aktueller App- und Collector-Zustand.");
@@ -1311,6 +1528,48 @@ public final class MainActivity extends Activity {
             int code = c.getResponseCode();
             String res = readAll(code >= 200 && code < 300 ? c.getInputStream() : c.getErrorStream());
             if (code < 200 || code >= 300) throw new IllegalStateException("HTTP " + code + " " + cut(res, 120));
+            return res;
+        } finally { if (c != null) c.disconnect(); }
+    }
+
+
+    private static String httpGetToken(String url, String headerName, String headerValue) throws Exception {
+        HttpURLConnection c = null;
+        try {
+            c = (HttpURLConnection) new URL(url).openConnection();
+            c.setConnectTimeout(4500);
+            c.setReadTimeout(7000);
+            c.setRequestMethod("GET");
+            c.setRequestProperty("X-Nexus-Collector", "nexus-collector-app-v3");
+            if (headerName != null && !headerName.isEmpty() && headerValue != null && !headerValue.isEmpty()) {
+                c.setRequestProperty(headerName, headerValue);
+            }
+            int code = c.getResponseCode();
+            String body = readAll(code >= 200 && code < 300 ? c.getInputStream() : c.getErrorStream());
+            if (code < 200 || code >= 300) throw new IllegalStateException("HTTP " + code + " " + cut(body, 160));
+            return body;
+        } finally { if (c != null) c.disconnect(); }
+    }
+
+    private static String httpPostJsonToken(String url, String body, String headerName, String headerValue) throws Exception {
+        HttpURLConnection c = null;
+        try {
+            byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+            c = (HttpURLConnection) new URL(url).openConnection();
+            c.setConnectTimeout(4500);
+            c.setReadTimeout(7000);
+            c.setRequestMethod("POST");
+            c.setDoOutput(true);
+            c.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            c.setRequestProperty("X-Nexus-Collector", "nexus-collector-app-v3");
+            if (headerName != null && !headerName.isEmpty() && headerValue != null && !headerValue.isEmpty()) {
+                c.setRequestProperty(headerName, headerValue);
+            }
+            c.setFixedLengthStreamingMode(bytes.length);
+            try (OutputStream out = c.getOutputStream()) { out.write(bytes); }
+            int code = c.getResponseCode();
+            String res = readAll(code >= 200 && code < 300 ? c.getInputStream() : c.getErrorStream());
+            if (code < 200 || code >= 300) throw new IllegalStateException("HTTP " + code + " " + cut(res, 160));
             return res;
         } finally { if (c != null) c.disconnect(); }
     }

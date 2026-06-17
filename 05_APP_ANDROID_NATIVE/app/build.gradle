@@ -7,10 +7,29 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.nexus.chefnative"
         minSdk 26
         targetSdk 35
-        versionCode 171
-        versionName "1.6.171-visual-nexy"
+        versionCode 172
+        versionName "1.6.172-digipad-split"
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    flavorDimensions "mode"
+
+    productFlavors {
+        nexus {
+            dimension "mode"
+            applicationId "com.nexus.chefnative"
+            buildConfigField "boolean", "DIGIPAD_ONLY", "false"
+        }
+
+        digipad {
+            dimension "mode"
+            applicationId "com.nexus.digipad"
+            buildConfigField "boolean", "DIGIPAD_ONLY", "true"
+        }
     }
 }
