@@ -27,3 +27,8 @@ docs/nexy/*LOCAL*.md
 docs/nexy/NEXY_LOCAL_HEALTHCHECK.json
 docs/nexy/NEXY_LOCAL_HEALTHCHECK.md
 
+.run/
+logs/
+docs/audit/NEXUS_DOCTOR_*.md
+docs/audit/NEXUS_DOCTOR_LATEST.md
+docs/audit/NEXUS_HARD_AUDIT_*.md

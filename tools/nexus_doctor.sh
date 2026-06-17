@@ -8,6 +8,7 @@ LATEST="$ROOT/docs/audit/NEXUS_DOCTOR_LATEST.md"
 
 cd "$ROOT"
 mkdir -p docs/audit
+mkdir -p .run
 
 PASS=0
 FAIL=0
@@ -34,8 +35,8 @@ check_endpoint() {
     return 0
   fi
 
-  if curl -sS --max-time 3 "$url" >/tmp/nexus_doctor_endpoint.json 2>/tmp/nexus_doctor_endpoint.err; then
-    if grep -q '"ok"[[:space:]]*:[[:space:]]*true' /tmp/nexus_doctor_endpoint.json; then
+  if curl -sS --max-time 3 "$url" >"$ROOT/.run/nexus_doctor_endpoint.json" 2>"$ROOT/.run/nexus_doctor_endpoint.err"; then
+    if grep -q '"ok"[[:space:]]*:[[:space:]]*true' "$ROOT/.run/nexus_doctor_endpoint.json"; then
       ok "$name erreichbar: $url"
     else
       warn "$name antwortet, aber ok=true fehlt: $url"
