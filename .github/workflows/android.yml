@@ -68,15 +68,27 @@ jobs:
           cd 05_APP_ANDROID_NATIVE
           gradle --no-daemon :app:assembleDebug
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/Nexus-Chef-Native-v1.5.6-debug.apk
-          ls -lah app/build/outputs/apk/debug dist
-          test -f dist/Nexus-Chef-Native-v1.5.6-debug.apk
+          echo "=== APK OUTPUTS ==="
+          find app/build/outputs/apk -type f -name "*.apk" -ls
+          NEXUS_APK="$(find app/build/outputs/apk -type f -path "*/nexus/debug/*.apk" | head -1)"
+          if [ -z "$NEXUS_APK" ]; then
+            echo "ERROR: Nexus APK nicht gefunden"
+            find app/build/outputs/apk -type f -name "*.apk" -print
+            exit 1
+          fi
+          cp "$NEXUS_APK" dist/Nexus-Master-v1.6.176-usable-ui-debug.apk
+          ls -lh dist
+          echo "=== APK TREE ==="
+          find app/build/outputs/apk -maxdepth 4 -type f -name "*.apk" -ls
+          echo "=== DIST ==="
+          ls -lah dist
+          test -f dist/Nexus-Master-v1.6.176-usable-ui-debug.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v6
         with:
-          name: Nexus-Chef-Native-v1.5.6-APK
-          path: 05_APP_ANDROID_NATIVE/dist/Nexus-Chef-Native-v1.5.6-debug.apk
+          name: Nexus-Master-v1.6.176-usable-ui-APK
+          path: 05_APP_ANDROID_NATIVE/dist/Nexus-Master-v1.6.176-usable-ui-debug.apk
           if-no-files-found: error
 
       - name: Upload Build Diagnostics
