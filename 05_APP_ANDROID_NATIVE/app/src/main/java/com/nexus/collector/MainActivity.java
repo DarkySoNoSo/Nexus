@@ -236,7 +236,7 @@ public final class MainActivity extends Activity {
         p.addView(section("MENUE"));
         row(p, nav("Chef", v -> showChefPage()), nav("Nachrichten", v -> showMessagesPage()));
         row(p, nav("Dateien", v -> showFilesPage()), nav("Zeitstrahl", v -> showTimelinePage()));
-        row(p, nav("Companion", v -> showCompanionPage()), nav("Collector", v -> showCollectorPage()));
+        row(p, nav("Digi Dragon", v -> showCompanionPage()), nav("Collector", v -> showCollectorPage()));
         row(p, nav("Web", v -> showWebPage("/")), nav("Widget neu", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }));
         row(p, nav("Nexy", v -> showNexyPage()), nav("Status", v -> showStatusOnly()));
         row(p, nav("Seite neu", v -> showHome()), nav("Nexy Briefing", v -> showNexyPage()));
@@ -335,15 +335,179 @@ public final class MainActivity extends Activity {
     }
 
     private void showCompanionPage() {
-        clearPage(PAGE_COMPANION, "Companion", "Mini-Drache: Training, Arena, Evolution. Lokal, bis du den Chef aktiv fragst.");
+        clearPage(PAGE_COMPANION, "Digi Dragon", "Echter Digi-Dragon-Core über lokale Termux-Bridge. Offline startfähig, Aktionen nur auf Knopfdruck.");
         LinearLayout p = activePanel();
-        p.addView(section("ZUSTAND"));
-        TextView state = logBox(companionSummary());
-        p.addView(state, card(8));
+
+        p.addView(section("BRIDGE"));
+        endpointInput = input("http://127.0.0.1:8777", true);
+        endpointInput.setText(dragonBridgeBase());
+        p.addView(endpointInput, card(8));
+
+        TextView out = logBox("Digi Dragon bereit.\nBridge: " + dragonBridgeBase()
+                + "\nKeine automatische Abfrage beim App-Start.\nTermux muss laufen: ./tools/nexus_start_all.sh");
+        p.addView(out, card(8));
+
+        row(p,
+                nav("Bridge speichern", v -> { setDragonBridgeBase(endpointInput.getText().toString()); out.setText("Digi Dragon Bridge gespeichert:\n" + dragonBridgeBase()); }),
+                nav("Status", v -> loadDragonEndpoint(out, "Digi Dragon Status", "/api/dragon/status"))
+        );
+
+        row(p,
+                nav("Habitat", v -> loadDragonEndpoint(out, "Digi Dragon Habitat", "/api/dragon/habitat")),
+                nav("Codex", v -> loadDragonEndpoint(out, "Digi Dragon Codex", "/api/dragon/codex"))
+        );
+
         p.addView(section("AKTIONEN"));
-        row(p, nav("Training", v -> companionTrain(state)), nav("Arena", v -> companionArena(state)));
-        row(p, nav("Evolution", v -> companionEvolve(state)), nav("Ruhig", v -> companionCalm(state)));
-        row(p, nav("Chef mit Zustand", v -> companionChef()), nav("Tagesreset", v -> companionReset(state)));
+
+        row(p,
+                nav("Füttern", v -> postDragonAction(out, "Füttern", "/api/dragon/feed", "{}")),
+                nav("Pflegen", v -> postDragonAction(out, "Pflegen", "/api/dragon/care", "{}"))
+        );
+
+        row(p,
+                nav("Training Fokus", v -> postDragonAction(out, "Training Fokus", "/api/dragon/train", "{\"training_type\":\"focus\"}")),
+                nav("Training Kraft", v -> postDragonAction(out, "Training Kraft", "/api/dragon/train", "{\"training_type\":\"strength\"}"))
+        );
+
+        row(p,
+                nav("Freikampf", v -> postDragonAction(out, "Freikampf", "/api/dragon/freefight", "{}")),
+                nav("Arena", v -> postDragonAction(out, "Arena", "/api/dragon/arena", "{}"))
+        );
+
+        row(p,
+                nav("Evolution", v -> postDragonAction(out, "Evolution", "/api/dragon/evolve", "{}")),
+                nav("Chef mit Zustand", v -> dragonChef(out))
+        );
+    }
+
+    private String dragonBridgeBase() {
+        return NexusConfig.prefs(this).getString("dragon_bridge_url", "http://127.0.0.1:8777");
+    }
+
+    private void setDragonBridgeBase(String value) {
+        String v = value == null ? "" : value.trim();
+        if (v.endsWith("/")) v = v.substring(0, v.length() - 1);
+        if (v.isEmpty()) v = "http://127.0.0.1:8777";
+        NexusConfig.prefs(this).edit().putString("dragon_bridge_url", v).apply();
+    }
+
+    private void loadDragonEndpoint(TextView out, String title, String path) {
+        String base = dragonBridgeBase();
+        out.setText("Lade " + title + "...\n" + base + path);
+        new Thread(() -> {
+            try {
+                String body = httpGet(base + path);
+                String text = dragonRender(title, body, base);
+                runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(text); });
+            } catch (Exception ex) {
+                String err = "Digi Dragon nicht erreichbar.\n"
+                        + "Bridge: " + base + "\n"
+                        + "Fehler: " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 160) + "\n\n"
+                        + "Termux prüfen:\n"
+                        + "cd ~/Nexus-cleanwork\n"
+                        + "./tools/nexus_start_all.sh\n"
+                        + "./tools/nexus_doctor.sh";
+                runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(err); });
+            }
+        }).start();
+    }
+
+    private void postDragonAction(TextView out, String title, String path, String jsonBody) {
+        String base = dragonBridgeBase();
+        out.setText("Sende " + title + "...\n" + base + path);
+        new Thread(() -> {
+            try {
+                String body = httpPost(base + path, jsonBody);
+                String text = dragonRender(title, body, base);
+                runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(text); });
+            } catch (Exception ex) {
+                String err = "Digi-Dragon-Aktion fehlgeschlagen.\n"
+                        + "Aktion: " + title + "\n"
+                        + "Bridge: " + base + "\n"
+                        + "Fehler: " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 160);
+                runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(err); });
+            }
+        }).start();
+    }
+
+    private String dragonRender(String title, String body, String base) {
+        try {
+            JSONObject root = new JSONObject(body);
+            JSONObject state = root.optJSONObject("state");
+            if (state == null) state = root;
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(title).append("\n");
+            sb.append("Quelle: ").append(host(base)).append("\n\n");
+
+            String msg = root.optString("message", "");
+            if (!msg.isEmpty()) sb.append(msg).append("\n\n");
+
+            sb.append("Drache: ").append(state.optString("name", "Nexus-Drache")).append("\n");
+            sb.append("Stufe: ").append(state.optString("stage_label", state.optString("stage", "?"))).append("\n");
+            sb.append("Level: ").append(state.optInt("level", 0)).append(" | XP: ").append(state.optInt("xp", 0)).append("\n");
+            sb.append("Pfad: ").append(state.optString("evolution_path", "unknown")).append("\n\n");
+
+            sb.append("Zustand\n");
+            sb.append("Energie: ").append(state.optInt("energy", 0)).append(" | Stimmung: ").append(state.optInt("mood", 0)).append("\n");
+            sb.append("Bindung: ").append(state.optInt("bond", 0)).append(" | Kampfbereit: ").append(state.optInt("battle_ready", 0)).append("\n");
+            sb.append("HP: ").append(state.optInt("hp", 0)).append("/").append(state.optInt("max_hp", 0)).append("\n\n");
+
+            sb.append("Stats\n");
+            sb.append("Stärke ").append(state.optInt("strength", 0))
+                    .append(" | Ausdauer ").append(state.optInt("endurance", 0))
+                    .append(" | Tempo ").append(state.optInt("speed", 0))
+                    .append(" | Fokus ").append(state.optInt("focus", 0)).append("\n");
+            sb.append("Instinkt ").append(state.optInt("instinct", 0))
+                    .append(" | Intelligenz ").append(state.optInt("intelligence", 0))
+                    .append(" | Wille ").append(state.optInt("willpower", 0)).append("\n\n");
+
+            JSONObject habitat = state.optJSONObject("habitat");
+            if (habitat != null) {
+                sb.append("Habitat: ").append(habitat.optString("name", "?"))
+                        .append(" / ").append(habitat.optString("theme", "?")).append("\n\n");
+            }
+
+            JSONArray attacks = state.optJSONArray("attacks");
+            if (attacks != null && attacks.length() > 0) {
+                sb.append("Attacken\n");
+                int max = Math.min(attacks.length(), 8);
+                for (int i = 0; i < max; i++) {
+                    JSONObject a = attacks.optJSONObject(i);
+                    if (a == null) continue;
+                    sb.append("- ").append(a.optString("name", a.optString("id", "?")))
+                            .append(" [").append(a.optString("element", "?"))
+                            .append("/").append(a.optString("class", "?")).append("]");
+                    if (a.optInt("equipped", 0) == 1) sb.append(" aktiv");
+                    sb.append("\n");
+                }
+            }
+
+            JSONArray unlocks = root.optJSONArray("unlocks");
+            if (unlocks != null && unlocks.length() > 0) {
+                sb.append("\nNeue Freischaltungen\n");
+                for (int i = 0; i < unlocks.length(); i++) sb.append("- ").append(unlocks.optString(i)).append("\n");
+            }
+
+            JSONArray levelNotes = root.optJSONArray("level_notes");
+            if (levelNotes != null && levelNotes.length() > 0) {
+                sb.append("\nLevel\n");
+                for (int i = 0; i < levelNotes.length(); i++) sb.append("- ").append(levelNotes.optString(i)).append("\n");
+            }
+
+            return sb.toString().trim();
+        } catch (Exception ex) {
+            return title + "\nQuelle: " + host(base) + "\n\n" + cutKeepLines(body, 6500);
+        }
+    }
+
+    private void dragonChef(TextView out) {
+        String state = out == null ? "" : out.getText().toString();
+        showChefPage();
+        chefInput.setText("Digi-Dragon-Zustand:\n"
+                + cutKeepLines(state, 1800)
+                + "\n\nBitte kurz und konkret: Welche nächste sinnvolle Aktion im Digi-Dragon-/Nexus-System?");
+        if (chefLog != null) chefLog.setText("Digi-Dragon-Zustand bereit. Drücke 'An Chef senden', wenn der Chef wirklich gefragt werden soll.");
     }
 
     private void companionTrain(TextView out) {
@@ -912,7 +1076,7 @@ public final class MainActivity extends Activity {
                 + "Endpoint: " + NexusConfig.endpoint(this) + "\n"
                 + "Sendestatus: " + NexusConfig.lastSendStatus(this) + "\n"
                 + "Widget: " + NexusConfig.lastWidgetStatus(this) + "\n"
-                + "Companion: " + dragonStage() + " L" + companionLevel() + "\n"
+                + "Digi Dragon: Bridge 8777 | Lokal " + dragonStage() + " L" + companionLevel() + "\n"
                 + "Theme: " + themeName();
     }
 
