@@ -29,7 +29,7 @@ Schreiben in ROT nur mit:
 
 ### ORANGE
 
-ORANGE umfasst kontrollierte Datenbereiche, private Laufzeitdaten, Companion-Datenbanken, Collector-Zwischenstaende und nichtoeffentliche Reports.
+ORANGE umfasst kontrollierte Datenbereiche, private Laufzeitdaten, Digi-Dragon-Datenbanken, Collector-Zwischenstaende und nichtoeffentliche Reports.
 
 Schreiben in ORANGE nur mit:
 

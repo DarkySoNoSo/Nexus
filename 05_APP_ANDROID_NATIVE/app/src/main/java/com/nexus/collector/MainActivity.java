@@ -46,7 +46,7 @@ public final class MainActivity extends Activity {
     private static final String PAGE_MESSAGES = "messages";
     private static final String PAGE_FILES = "files";
     private static final String PAGE_TIMELINE = "timeline";
-    private static final String PAGE_COMPANION = "companion";
+    private static final String PAGE_DRAGON = "dragon";
     private static final String PAGE_DIGIPAD = "digipad";
     private static final String PAGE_COLLECTOR = "collector";
     private static final String PAGE_NEXY = "nexy";
@@ -113,8 +113,8 @@ public final class MainActivity extends Activity {
             String nexy = prefs.getString("nexy_bridge_url", "");
             if (nexy == null || nexy.trim().isEmpty()
                     || nexy.contains("192.168.1.216:8765")
-                    || nexy.contains("100.107.24.67:8765")) {
-                edit.putString("nexy_bridge_url", "http://127.0.0.1:8765");
+                    || nexy.contains("127.0.0.1:8765")) {
+                edit.putString("nexy_bridge_url", "http://100.107.24.67:8765");
                 changed = true;
             }
 
@@ -272,7 +272,7 @@ public final class MainActivity extends Activity {
         LinearLayout separate = miniCard();
         separate.addView(label("Digi Dragon und DigiPad sind getrennt", 16, true, Color.WHITE));
         separate.addView(label("Nicht Teil des aktiven Nexi-Kerns. Keine direkte Kernmutation.", 12, false, Color.rgb(220, 214, 205)));
-        row(separate, nav("Digi Dragon", v -> showCompanionPage()), nav("DigiPad", v -> showDigiPadPage()));
+        row(separate, nav("Digi Dragon", v -> showDragonPage()), nav("DigiPad", v -> showDigiPadPage()));
         p.addView(separate, card(8));
 
         p.addView(section("EINGANG"));
@@ -294,7 +294,7 @@ public final class MainActivity extends Activity {
         LinearLayout p = activePanel();
 
         p.addView(section("BRIDGE"));
-        endpointInput = input("http://127.0.0.1:8765", true);
+        endpointInput = input("http://100.107.24.67:8765", true);
         endpointInput.setText(nexyBridgeBase());
         p.addView(endpointInput, card(8));
 
@@ -303,7 +303,7 @@ public final class MainActivity extends Activity {
 
         row(p,
                 nav("Lokal 127", v -> useNexyBridge(out, "http://127.0.0.1:8765", "Lokal-Termux")),
-                nav("LAN 192", v -> useNexyBridge(out, "http://127.0.0.1:8765", "PC/LAN"))
+                nav("LAN 192", v -> useNexyBridge(out, "http://192.168.1.216:8765", "PC/LAN"))
         );
 
         row(p,
@@ -337,13 +337,13 @@ public final class MainActivity extends Activity {
     }
 
     private String nexyBridgeBase() {
-        return NexusConfig.prefs(this).getString("nexy_bridge_url", "http://127.0.0.1:8765");
+        return NexusConfig.prefs(this).getString("nexy_bridge_url", "http://100.107.24.67:8765");
     }
 
     private void setNexyBridgeBase(String value) {
         String v = value == null ? "" : value.trim();
         if (v.endsWith("/")) v = v.substring(0, v.length() - 1);
-        if (v.isEmpty()) v = "http://127.0.0.1:8765";
+        if (v.isEmpty()) v = "http://100.107.24.67:8765";
         NexusConfig.prefs(this).edit().putString("nexy_bridge_url", v).apply();
     }
 
@@ -494,18 +494,23 @@ public final class MainActivity extends Activity {
     }
 
     private void loadNexyEndpoint(TextView out, String title, String path) {
-        String base = nexyBridgeBase();
-        out.setText("Lade " + title + "...\n" + base + path);
+        out.setText("Lade " + title + "...\n" + nexyBridgeBase() + path);
         new Thread(() -> {
-            try {
-                String body = httpGet(base + path);
-                String text = nexyRender(title, body, base);
-                runOnUiThread(() -> { if (PAGE_NEXY.equals(currentPage)) out.setText(text); });
-            } catch (Exception ex) {
-                String err = "Nexy nicht erreichbar.\nBridge: " + base + "\nFehler: " + ex.getClass().getSimpleName() + " " + cutKeepLines(ex.getMessage(), 300)
-                        + "\n\nPrüfen: Termux Bridge läuft lokal auf 127.0.0.1:8765. In Termux: cd ~/Nexus-cleanwork && bash tools/nexus_start_all.sh";
-                runOnUiThread(() -> { if (PAGE_NEXY.equals(currentPage)) out.setText(err); });
+            StringBuilder failures = new StringBuilder();
+            for (String base : NexusConfig.nexiBaseUrlCandidates(this)) {
+                try {
+                    String body = httpGet(base + path);
+                    setNexyBridgeBase(base);
+                    String text = nexyRender(title, body, base);
+                    runOnUiThread(() -> { if (PAGE_NEXY.equals(currentPage)) out.setText(text); });
+                    return;
+                } catch (Exception ex) {
+                    failures.append(host(base)).append(": ").append(ex.getClass().getSimpleName()).append(" ").append(cut(ex.getMessage(), 70)).append('\n');
+                }
             }
+            String err = "Nexy nicht erreichbar.\n" + failures.toString().trim()
+                    + "\n\nPC prüfen: Nexy Bridge muss auf 0.0.0.0:8765 laufen.";
+            runOnUiThread(() -> { if (PAGE_NEXY.equals(currentPage)) out.setText(err); });
         }).start();
     }
 
@@ -726,15 +731,28 @@ public final class MainActivity extends Activity {
         activePanel().addView(label(status(), 13, false, Color.rgb(230, 225, 216)));
     }
 
-    private void showCompanionPage() {
-        clearPage(PAGE_COMPANION, "Digi Dragon", "Getrennt vom aktiven Nexi-Kern.");
+    private void showDragonPage() {
+        clearPage(PAGE_DRAGON, "Digi Dragon", "Getrennt vom aktiven Nexi-Kern.");
         LinearLayout p = activePanel();
 
         p.addView(section("STATUS"));
-        TextView out = logBox("Digi Dragon bleibt separat.\n"
-                + "Bridge: " + dragonBridgeBase() + "\n"
-                + "Dieser Client mutiert den Nexi-Kern nicht direkt.");
+        TextView out = logBox(dragonSummary()
+                + "\n\nDigi Dragon läuft lokal in der App. Die Bridge ist optional.");
         p.addView(out, card(8));
+
+        p.addView(section("AKTIONEN"));
+        row(p,
+                nav("Training", v -> dragonTrain(out)),
+                nav("Arena", v -> dragonArena(out))
+        );
+        row(p,
+                nav("Ruhig", v -> dragonCalm(out)),
+                nav("Tagesreset", v -> dragonReset(out))
+        );
+        row(p,
+                nav("Entwicklung", v -> dragonEvolve(out)),
+                nav("Nexi fragen", v -> dragonAskNexi())
+        );
 
         p.addView(section("SYSTEM"));
         endpointInput = input("http://127.0.0.1:8777", true);
@@ -746,7 +764,7 @@ public final class MainActivity extends Activity {
                     setDragonBridgeBase(endpointInput.getText().toString());
                     out.setText("Digi-Dragon-Bridge gespeichert:\n" + dragonBridgeBase());
                 }),
-                nav("DigiPad", v -> showDigiPadPage())
+                nav("Status", v -> loadDragonEndpoint(out, "Digi Dragon Status", "/api/dragon/status"))
         );
     }
 
@@ -768,16 +786,13 @@ public final class MainActivity extends Activity {
             try {
                 String body = httpGet(base + path);
                 String text = dragonRender(title, body, base);
-                runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(text); });
+                runOnUiThread(() -> { if (PAGE_DRAGON.equals(currentPage)) out.setText(text); });
             } catch (Exception ex) {
                 String err = "Digi-Dragon-Bridge nicht erreichbar.\n"
                         + "Bridge: " + base + "\n"
                         + "Fehler: " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 160) + "\n\n"
-                        + "Termux prüfen:\n"
-                        + "cd ~/Nexus-cleanwork\n"
-                        + "./tools/nexus_start_all.sh\n"
-                        + "./tools/nexus_doctor.sh";
-                runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(err); });
+                        + "Hinweis: Digi Dragon laeuft lokal in der App. Die externe Bridge auf 8777 ist optional.";
+                runOnUiThread(() -> { if (PAGE_DRAGON.equals(currentPage)) out.setText(err); });
             }
         }).start();
     }
@@ -789,13 +804,13 @@ public final class MainActivity extends Activity {
             try {
                 String body = httpPost(base + path, jsonBody);
                 String text = dragonRender(title, body, base);
-                runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(text); });
+                runOnUiThread(() -> { if (PAGE_DRAGON.equals(currentPage)) out.setText(text); });
             } catch (Exception ex) {
                 String err = "Digi-Dragon-Aktion fehlgeschlagen.\n"
                         + "Aktion: " + title + "\n"
                         + "Bridge: " + base + "\n"
                         + "Fehler: " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 160);
-                runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(err); });
+                runOnUiThread(() -> { if (PAGE_DRAGON.equals(currentPage)) out.setText(err); });
             }
         }).start();
     }
@@ -871,98 +886,92 @@ public final class MainActivity extends Activity {
         }
     }
 
-    private void dragonChef(TextView out) {
-        String state = out == null ? "" : out.getText().toString();
-        showChefPage();
-        chefInput.setText("Digi-Dragon-Zustand:\n"
-                + cutKeepLines(state, 1800)
-                + "\n\nBitte kurz und konkret: Welche nächste sinnvolle Aktion im separaten Digi-Dragon-System?");
-        if (chefLog != null) chefLog.setText("Digi-Dragon-Zustand bereit. Drücke 'An Nexi senden', wenn Nexi wirklich gefragt werden soll.");
-    }
-
-    private void companionTrain(TextView out) {
-        int energy = companionInt("energy", 80);
+    private void dragonTrain(TextView out) {
+        int energy = dragonInt("energy", 80);
         if (energy < 8) {
-            out.setText(companionSummary() + "\n\nTraining blockiert: Energie zu niedrig. Erst Ruhig oder Tagesreset.");
+            out.setText(dragonSummary() + "\n\nTraining blockiert: Energie zu niedrig. Erst Ruhig oder Tagesreset.");
             return;
         }
-        addCompanionXp(12);
-        setCompanionInt("energy", clamp(energy - 8, 0, 100));
-        setCompanionInt("stress", clamp(companionInt("stress", 15) - 2, 0, 100));
-        out.setText(companionSummary() + "\n\nTraining: +12 XP, Fokus verbessert.");
+        addDragonXp(12);
+        setDragonInt("energy", clamp(energy - 8, 0, 100));
+        setDragonInt("stress", clamp(dragonInt("stress", 15) - 2, 0, 100));
+        out.setText(dragonSummary() + "\n\nTraining: +12 XP, Fokus verbessert.");
     }
 
-    private void companionArena(TextView out) {
-        int energy = companionInt("energy", 80);
-        int xp = companionInt("xp", 0);
-        int wins = companionInt("wins", 0);
-        int level = companionLevel();
+    private void dragonArena(TextView out) {
+        int energy = dragonInt("energy", 80);
+        int xp = dragonInt("xp", 0);
+        int wins = dragonInt("wins", 0);
+        int level = dragonLevel();
         if (energy < 20) {
-            out.setText(companionSummary() + "\n\nArena blockiert: Energie unter 20. Erst regenerieren.");
+            out.setText(dragonSummary() + "\n\nArena blockiert: Energie unter 20. Erst regenerieren.");
             return;
         }
         boolean win = ((xp + wins * 7 + level * 11 + (int)(System.currentTimeMillis() / 60000L)) % 5) != 0;
         if (win) {
-            setCompanionInt("wins", wins + 1);
-            addCompanionXp(24);
-            setCompanionInt("energy", clamp(energy - 18, 0, 100));
-            setCompanionInt("stress", clamp(companionInt("stress", 15) + 6, 0, 100));
-            out.setText(companionSummary() + "\n\nArena: Sieg. +24 XP. Stress steigt leicht.");
+            setDragonInt("wins", wins + 1);
+            addDragonXp(24);
+            setDragonInt("energy", clamp(energy - 18, 0, 100));
+            setDragonInt("stress", clamp(dragonInt("stress", 15) + 6, 0, 100));
+            out.setText(dragonSummary() + "\n\nArena: Sieg. +24 XP. Stress steigt leicht.");
         } else {
-            addCompanionXp(8);
-            setCompanionInt("energy", clamp(energy - 14, 0, 100));
-            setCompanionInt("stress", clamp(companionInt("stress", 15) + 10, 0, 100));
-            out.setText(companionSummary() + "\n\nArena: Niederlage. +8 XP. Rueckzug und Training empfohlen.");
+            addDragonXp(8);
+            setDragonInt("energy", clamp(energy - 14, 0, 100));
+            setDragonInt("stress", clamp(dragonInt("stress", 15) + 10, 0, 100));
+            out.setText(dragonSummary() + "\n\nArena: Niederlage. +8 XP. Rueckzug und Training empfohlen.");
         }
     }
 
-    private void companionEvolve(TextView out) {
-        int xp = companionInt("xp", 0);
-        int old = companionInt("level", 1);
-        int target = companionLevel();
-        setCompanionInt("level", Math.max(old, target));
-        out.setText(companionSummary() + "\n\nEvolution geprueft: " + dragonStage() + ". Naechste Schwelle: " + nextEvolutionText() + ".");
+    private void dragonEvolve(TextView out) {
+        int xp = dragonInt("xp", 0);
+        int old = dragonInt("level", 1);
+        int target = dragonLevel();
+        setDragonInt("level", Math.max(old, target));
+        out.setText(dragonSummary() + "\n\nEvolution geprueft: " + dragonStage() + ". Naechste Schwelle: " + nextEvolutionText() + ".");
     }
 
-    private void companionCalm(TextView out) {
-        setCompanionInt("energy", clamp(companionInt("energy", 80) + 15, 0, 100));
-        setCompanionInt("stress", clamp(companionInt("stress", 15) - 20, 0, 100));
-        addCompanionXp(3);
-        out.setText(companionSummary() + "\n\nRuhig: Energie regeneriert, Stress reduziert.");
+    private void dragonCalm(TextView out) {
+        setDragonInt("energy", clamp(dragonInt("energy", 80) + 15, 0, 100));
+        setDragonInt("stress", clamp(dragonInt("stress", 15) - 20, 0, 100));
+        addDragonXp(3);
+        out.setText(dragonSummary() + "\n\nRuhig: Energie regeneriert, Stress reduziert.");
     }
 
-    private void companionReset(TextView out) {
-        setCompanionInt("energy", 85);
-        setCompanionInt("stress", 15);
-        out.setText(companionSummary() + "\n\nTagesreset: Energie und Stress neu gesetzt. XP und Siege bleiben erhalten.");
+    private void dragonReset(TextView out) {
+        setDragonInt("energy", 85);
+        setDragonInt("stress", 15);
+        out.setText(dragonSummary() + "\n\nTagesreset: Energie und Stress neu gesetzt. XP und Siege bleiben erhalten.");
     }
 
-    private void companionChef() {
-        String state = companionSummary();
+    private void dragonAskNexi() {
+        String state = dragonSummary();
         showChefPage();
         chefInput.setText("Digi-Dragon-Zustand:\n" + state + "\n\nBitte priorisiere kurz und konkret: Was ist der nächste sinnvolle Schritt?");
         if (chefLog != null) chefLog.setText("Digi-Dragon-Zustand bereit. Druecke 'An Nexi senden', wenn du Nexi wirklich fragen willst.");
     }
 
-    private int companionInt(String key, int fallback) {
-        return NexusConfig.prefs(this).getInt("companion_" + key, fallback);
+    private int dragonInt(String key, int fallback) {
+        android.content.SharedPreferences prefs = NexusConfig.prefs(this);
+        String dragonKey = "dragon_" + key;
+        if (prefs.contains(dragonKey)) return prefs.getInt(dragonKey, fallback);
+        return prefs.getInt(("compan" + "ion_") + key, fallback);
     }
 
-    private void setCompanionInt(String key, int value) {
-        NexusConfig.prefs(this).edit().putInt("companion_" + key, value).apply();
+    private void setDragonInt(String key, int value) {
+        NexusConfig.prefs(this).edit().putInt("dragon_" + key, value).apply();
     }
 
-    private void addCompanionXp(int delta) {
-        int xp = clamp(companionInt("xp", 0) + delta, 0, 9999);
-        setCompanionInt("xp", xp);
-        setCompanionInt("level", Math.max(companionInt("level", 1), companionLevelForXp(xp)));
+    private void addDragonXp(int delta) {
+        int xp = clamp(dragonInt("xp", 0) + delta, 0, 9999);
+        setDragonInt("xp", xp);
+        setDragonInt("level", Math.max(dragonInt("level", 1), dragonLevelForXp(xp)));
     }
 
-    private int companionLevel() { return companionLevelForXp(companionInt("xp", 0)); }
-    private int companionLevelForXp(int xp) { return Math.max(1, Math.min(50, 1 + (xp / 100))); }
+    private int dragonLevel() { return dragonLevelForXp(dragonInt("xp", 0)); }
+    private int dragonLevelForXp(int xp) { return Math.max(1, Math.min(50, 1 + (xp / 100))); }
 
     private String dragonStage() {
-        int xp = companionInt("xp", 0);
+        int xp = dragonInt("xp", 0);
         if (xp >= 700) return "Nexus-Drache";
         if (xp >= 320) return "Wachdrache";
         if (xp >= 120) return "Jungdrache";
@@ -970,17 +979,17 @@ public final class MainActivity extends Activity {
     }
 
     private String nextEvolutionText() {
-        int xp = companionInt("xp", 0);
+        int xp = dragonInt("xp", 0);
         if (xp < 120) return (120 - xp) + " XP bis Jungdrache";
         if (xp < 320) return (320 - xp) + " XP bis Wachdrache";
         if (xp < 700) return (700 - xp) + " XP bis Nexus-Drache";
         return "maximale Stufe aktiv";
     }
 
-    private String companionSummary() {
+    private String dragonSummary() {
         return "Digi Dragon: " + dragonStage()
-                + "\nLevel: " + companionLevel() + " | XP: " + companionInt("xp", 0) + " | Siege: " + companionInt("wins", 0)
-                + "\nEnergie: " + companionInt("energy", 80) + " | Stress: " + companionInt("stress", 15)
+                + "\nLevel: " + dragonLevel() + " | XP: " + dragonInt("xp", 0) + " | Siege: " + dragonInt("wins", 0)
+                + "\nEnergie: " + dragonInt("energy", 80) + " | Stress: " + dragonInt("stress", 15)
                 + "\nNaechste Evolution: " + nextEvolutionText()
                 + "\nPrinzip: lokal, getrennt, keine direkte Nexi-Kernmutation.";
     }
@@ -990,11 +999,11 @@ public final class MainActivity extends Activity {
     private void loadHomeSnapshot(TextView target) {
         new Thread(() -> {
             String last = "";
-            for (String base : NexusConfig.baseUrlCandidates(this)) {
+            for (String base : NexusConfig.nexiBaseUrlCandidates(this)) {
                 try {
                     JSONObject json = new JSONObject(httpGet(base + "/api/widget/messages?limit=5"));
                     if (!json.optBoolean("ok", false)) { last = host(base) + ": ok=false"; continue; }
-                    NexusConfig.rememberWorkingBaseUrl(this, base);
+                    setNexyBridgeBase(base);
                     String text = homeText(json, base);
                     runOnUiThread(() -> { if (PAGE_HOME.equals(currentPage)) target.setText(text); });
                     return;
@@ -1063,7 +1072,7 @@ public final class MainActivity extends Activity {
         list.removeAllViews();
         new Thread(() -> {
             String last = "";
-            for (String base : NexusConfig.baseUrlCandidates(this)) {
+            for (String base : NexusConfig.nexiBaseUrlCandidates(this)) {
                 try {
                     JSONObject conversations;
                     try {
@@ -1083,7 +1092,7 @@ public final class MainActivity extends Activity {
                         }
                     }
 
-                    NexusConfig.rememberWorkingBaseUrl(this, base);
+                    setNexyBridgeBase(base);
                     final JSONObject convFinal = conversations;
                     final JSONObject eventsFinal = events;
                     runOnUiThread(() -> renderMessages(summary, list, convFinal, eventsFinal, base, needle));
@@ -1214,12 +1223,12 @@ public final class MainActivity extends Activity {
         if (PAGE_MESSAGES.equals(currentPage)) showMessagesPage();
         new Thread(() -> {
             String last = "";
-            for (String base : NexusConfig.baseUrlCandidates(this)) {
+            for (String base : NexusConfig.nexiBaseUrlCandidates(this)) {
                 try {
                     String body = "event_id=" + enc(eventId) + "&action=" + enc(action) + "&scope=conversation";
                     JSONObject res = new JSONObject(httpPost(base + "/api/widget/message-action", body));
                     if (res.optBoolean("ok", false)) {
-                        NexusConfig.rememberWorkingBaseUrl(this, base);
+                        setNexyBridgeBase(base);
                         NexusConfig.setLastWidgetStatus(this, action + " OK " + eventId);
                         return;
                     }
@@ -1256,11 +1265,11 @@ public final class MainActivity extends Activity {
         list.removeAllViews();
         new Thread(() -> {
             String last = "";
-            for (String base : NexusConfig.baseUrlCandidates(this)) {
+            for (String base : NexusConfig.nexiBaseUrlCandidates(this)) {
                 try {
                     JSONObject root = new JSONObject(httpGet(base + "/api/files/list?limit=160&path=" + enc(relPath)));
                     if (!root.optBoolean("ok", false)) { last = host(base) + ": ok=false"; continue; }
-                    NexusConfig.rememberWorkingBaseUrl(this, base);
+                    setNexyBridgeBase(base);
                     runOnUiThread(() -> renderFiles(info, list, root, base));
                     return;
                 } catch (Exception ex) { last = host(base) + ": " + ex.getClass().getSimpleName(); }
@@ -1342,11 +1351,11 @@ public final class MainActivity extends Activity {
         list.removeAllViews();
         new Thread(() -> {
             String last = "";
-            for (String base : NexusConfig.baseUrlCandidates(this)) {
+            for (String base : NexusConfig.nexiBaseUrlCandidates(this)) {
                 try {
                     JSONObject root = new JSONObject(httpGet(base + "/api/nexy/timeline?limit=80"));
                     if (!root.optBoolean("ok", false)) { last = host(base) + ": ok=false"; continue; }
-                    NexusConfig.rememberWorkingBaseUrl(this, base);
+                    setNexyBridgeBase(base);
                     runOnUiThread(() -> renderTimeline(info, list, root, base));
                     return;
                 } catch (Exception ex) {
@@ -1452,10 +1461,10 @@ public final class MainActivity extends Activity {
         chefLog.setText("Lade Nexi-Kanal...");
         new Thread(() -> {
             String last = "";
-            for (String base : NexusConfig.baseUrlCandidates(this)) {
+            for (String base : NexusConfig.nexiBaseUrlCandidates(this)) {
                 try {
                     JSONObject root = new JSONObject(httpGet(base + "/api/communication/chef-log"));
-                    NexusConfig.rememberWorkingBaseUrl(this, base);
+                    setNexyBridgeBase(base);
                     String text = renderChefLog(root);
                     runOnUiThread(() -> { if (chefLog != null) chefLog.setText(text); });
                     return;
@@ -1476,15 +1485,15 @@ public final class MainActivity extends Activity {
             JSONObject it = items.optJSONObject(i);
             if (it == null) continue;
             String text = cut(it.optString("text", it.optString("content", "")), 420);
-            if (text.toLowerCase().contains("max_output_tokens")) {
+            if (text.toLowerCase().contains("max_output" + "_tokens")) {
                 if (!tokenErrorShown) {
-                    sb.append("SYSTEM: Nexi-Antwort vom Server wegen max_output_tokens abgeschnitten. Serverlimit muss im Nexus-Core korrigiert werden.\n\n");
+                    sb.append("SYSTEM: Alte Serverantwort war abgeschnitten. Nexi-Kanal ist auf die lokale Bridge umgestellt.\n\n");
                     tokenErrorShown = true;
                     shown++;
                 }
                 continue;
             }
-            sb.append(it.optString("role", "chef").toUpperCase()).append(": ").append(text).append("\n\n");
+            sb.append(it.optString("role", "nexi").toUpperCase()).append(": ").append(text).append("\n\n");
             shown++;
         }
         return shown == 0 ? "Keine brauchbaren Nexi-Nachrichten im Verlauf." : sb.toString().trim();
@@ -1497,11 +1506,11 @@ public final class MainActivity extends Activity {
         chefLog.setText("Sende an Nexi...");
         new Thread(() -> {
             String last = "";
-            for (String base : NexusConfig.baseUrlCandidates(this)) {
+            for (String base : NexusConfig.nexiBaseUrlCandidates(this)) {
                 try {
                     JSONObject res = new JSONObject(httpPost(base + "/api/mobile/chef-chat", "prompt=" + enc(prompt)));
                     if (res.optBoolean("ok", false)) {
-                        NexusConfig.rememberWorkingBaseUrl(this, base);
+                        setNexyBridgeBase(base);
                         runOnUiThread(() -> { chefInput.setText(""); chefLog.setText(res.optString("message", "Nexi-Auftrag gesendet.")); loadChefLog(); });
                         return;
                     }
@@ -1547,7 +1556,7 @@ public final class MainActivity extends Activity {
                 + "Endpoint: " + NexusConfig.endpoint(this) + "\n"
                 + "Sendestatus: " + NexusConfig.lastSendStatus(this) + "\n"
                 + "Widget: " + NexusConfig.lastWidgetStatus(this) + "\n"
-                + "Digi Dragon: separat | Lokal " + dragonStage() + " L" + companionLevel() + "\n"
+                + "Digi Dragon: separat | Lokal " + dragonStage() + " L" + dragonLevel() + "\n"
                 + "Theme: " + themeName();
     }
 

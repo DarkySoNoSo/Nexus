@@ -14,6 +14,7 @@ public final class NexusConfig {
     public static final String LOCAL_ENDPOINT = "http://192.168.1.216:8081/api/communication/ingest";
     public static final String DEFAULT_NEXI_ENDPOINT = "http://100.107.24.67:8765/api/communication/ingest";
     public static final String FALLBACK_NEXI_ENDPOINT = "http://192.168.1.216:8765/api/communication/ingest";
+    public static final String LOCAL_NEXI_ENDPOINT = "http://127.0.0.1:8765/api/communication/ingest";
 
     private NexusConfig() {}
 
@@ -41,19 +42,33 @@ public final class NexusConfig {
     public static List<String> endpointCandidates(Context context) {
         SharedPreferences p = prefs(context);
         LinkedHashSet<String> set = new LinkedHashSet<>();
-        addEndpoint(set, p.getString("endpoint", ""));
-        addEndpoint(set, p.getString("last_ok_endpoint", ""));
-        addEndpoint(set, DEFAULT_ENDPOINT);
         addEndpoint(set, DEFAULT_NEXI_ENDPOINT);
+        addEndpoint(set, DEFAULT_ENDPOINT);
+        addEndpoint(set, p.getString("last_ok_endpoint", ""));
+        addEndpoint(set, p.getString("endpoint", ""));
         addEndpoint(set, FALLBACK_ENDPOINT);
         addEndpoint(set, FALLBACK_NEXI_ENDPOINT);
         addEndpoint(set, LOCAL_ENDPOINT);
+        addEndpoint(set, LOCAL_NEXI_ENDPOINT);
         return new ArrayList<>(set);
     }
 
     public static List<String> baseUrlCandidates(Context context) {
         LinkedHashSet<String> set = new LinkedHashSet<>();
         for (String endpoint : endpointCandidates(context)) set.add(baseUrl(endpoint));
+        return new ArrayList<>(set);
+    }
+
+    public static List<String> nexiBaseUrlCandidates(Context context) {
+        SharedPreferences p = prefs(context);
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        addBase(set, p.getString("nexy_bridge_url", ""));
+        addBase(set, "http://100.107.24.67:8765");
+        addBase(set, "http://192.168.1.216:8765");
+        addBase(set, "http://127.0.0.1:8765");
+        addBase(set, "http://100.107.24.67:8081");
+        addBase(set, "http://192.168.1.216:8081");
+        addBase(set, "http://127.0.0.1:8081");
         return new ArrayList<>(set);
     }
 
@@ -93,6 +108,11 @@ public final class NexusConfig {
     private static void addEndpoint(LinkedHashSet<String> set, String value) {
         if (value == null || value.trim().isEmpty()) return;
         set.add(normalizeEndpoint(value));
+    }
+
+    private static void addBase(LinkedHashSet<String> set, String value) {
+        if (value == null || value.trim().isEmpty()) return;
+        set.add(normalizeBaseUrl(value));
     }
 
     public static boolean enabled(Context context) { return prefs(context).getBoolean("enabled", true); }

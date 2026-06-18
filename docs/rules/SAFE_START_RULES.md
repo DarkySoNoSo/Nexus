@@ -9,7 +9,7 @@ Verboten beim App-Start:
 - Nachrichten laden
 - Dateien laden
 - Zeitstrahl laden
-- Chef-Log laden
+- Nexi-Kanal laden
 - Token erzwingen
 - Backend erzwingen
 

@@ -82,13 +82,13 @@ public final class NexusMessagesWidgetProvider extends AppWidgetProvider {
 
         EXECUTOR.execute(() -> {
             String lastError = "";
-            for (String base : NexusConfig.baseUrlCandidates(context)) {
+            for (String base : NexusConfig.nexiBaseUrlCandidates(context)) {
                 try {
                     String body = "event_id=" + encode(eventId) + "&action=" + encode(action) + "&scope=conversation";
                     String response = httpPost(base + "/api/widget/message-action", body);
                     JSONObject root = new JSONObject(response);
                     if (root.optBoolean("ok", false)) {
-                        NexusConfig.rememberWorkingBaseUrl(context, base);
+                        NexusConfig.prefs(context).edit().putString("nexy_bridge_url", base).apply();
                         NexusConfig.setLastWidgetStatus(context, actionLabel(action) + " OK " + hostLabel(base));
                         updateAll(context);
                         return;
@@ -149,14 +149,14 @@ public final class NexusMessagesWidgetProvider extends AppWidgetProvider {
 
     private static WidgetState fetchState(Context context) {
         String lastError = "";
-        for (String base : NexusConfig.baseUrlCandidates(context)) {
+        for (String base : NexusConfig.nexiBaseUrlCandidates(context)) {
             try {
                 JSONObject root = new JSONObject(httpGet(base + "/api/widget/messages?limit=20"));
                 if (!root.optBoolean("ok", false)) {
                     lastError = hostLabel(base) + ": ungueltig";
                     continue;
                 }
-                NexusConfig.rememberWorkingBaseUrl(context, base);
+                NexusConfig.prefs(context).edit().putString("nexy_bridge_url", base).apply();
                 NexusConfig.setLastWidgetStatus(context, "OK " + hostLabel(base));
                 return parseState(context, root);
             } catch (Exception ex) {

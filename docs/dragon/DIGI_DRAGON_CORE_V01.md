@@ -1,45 +1,32 @@
 # Digi Dragon Core v0.1
 
-Digi Dragon Core v0.1 ist der lokale Companion-Kern für Nexus.
+Digi Dragon ist ein separates lokales Spiel-/Begleitmodul. Es ist nicht der Nexus-Kern und nicht Nexi.
 
-## Enthalten
+## Aktiver Stand
 
-- lokaler Drache
-- SQLite-DB
-- Status
-- Füttern
-- Pflege
-- Training
-- Freikämpfe
-- Arena
-- Evolution
-- Attacken
-- Habitat
-- Bridge API
+- Die aktive Digi-Dragon-Funktion liegt aktuell in der Android-App.
+- Status, Training, Arena, Ruhe, Tagesreset und Entwicklung laufen lokal in der App.
+- Nexi darf optional gefragt werden, aber Digi Dragon mutiert Nexi nicht direkt.
+- Eine externe Bridge auf Port 8777 ist optional und derzeit keine Produktionsvoraussetzung.
 
 ## Rollenreinheit
 
-- Nexus = Gesamtsystem
-- Nexy = Gedächtnis / Kontext / Recall
-- Chef = Analyse / Ausführung
-- Collector = Rohdaten
-- Digi Dragon = Companion-/Game-Schicht
+- Nexus = Geruest und App-/Backend-Struktur.
+- Nexi = einziges Hirn fuer Kontext, Memory, Recall, Zeitstrahl und Entscheidungen.
+- Digi Dragon = separate Spielschicht.
+- DigiPad = separater Remote-/Family-Client.
 
-Keine automatische Chef-Ausführung.
-Keine automatischen API-Kosten.
-Safe-Start bleibt unberührt.
+## Nicht mehr aktiv
 
-## CLI
+Die frueheren Python-/Tool-Pfade fuer Digi Dragon sind aus dem aktiven Repo entfernt. Alte CLI- und Bridge-Startbefehle sind keine gueltigen Startpfade mehr.
 
-python backend/companion/dragon_cli.py status
-python backend/companion/dragon_cli.py feed
-python backend/companion/dragon_cli.py care
-python backend/companion/dragon_cli.py train focus
-python backend/companion/dragon_cli.py freefight
-python backend/companion/dragon_cli.py arena
-python backend/companion/dragon_cli.py evolve
-python backend/companion/dragon_cli.py codex
+## Gueltige Nutzung
 
-## Bridge
+1. Nexus Android-App oeffnen.
+2. `Digi Dragon` oeffnen.
+3. Lokale Aktionen direkt in der App nutzen.
+4. Nexi nur bewusst ueber `Nexi fragen` einbeziehen.
 
-./tools/start_digi_dragon_bridge.sh
+## Sicherheitsgrenze
+
+Digi Dragon bleibt getrennt. Keine automatische Nexi-Schreibaktion, keine automatische API-Kostenaktion und kein Zugriff auf private Dateien ohne explizite Nexi-/Dateien-Funktion.

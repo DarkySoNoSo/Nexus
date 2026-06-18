@@ -105,13 +105,13 @@ Darf analysieren, planen und ausfuehren. Kernschreiben nur mit Dokumentation, Va
 
 Darf Rohdaten sammeln. Darf nicht direkt Fakten erzeugen.
 
-### DigiDragon
+### Digi Dragon
 
-Darf Kernstatus visualisieren. Darf Nexy, Kontext und Zeitstrahl nicht ungefragt veraendern.
+Darf als getrennte Spielschicht laufen. Darf Nexy, Kontext und Zeitstrahl nicht ungefragt veraendern.
 
 ### DigiPad
 
-Darf nur gefilterte Companion-Daten anzeigen. Darf keine Kern-Rohdaten und keine Adminfunktionen erhalten.
+Darf nur gefilterte Digi-Dragon-/Remote-Daten anzeigen. Darf keine Kern-Rohdaten und keine Adminfunktionen erhalten.
 
 ### Android App
 
@@ -139,7 +139,7 @@ Verboten sind:
 - Kernimport ohne Vault
 - Kernimport ohne Klassifikation
 - Rohkommunikation als Fakt
-- DigiDragon-Direktschreibzugriff in Nexy
+- Digi-Dragon-Direktschreibzugriff in Nexy
 - DigiPad-Direktschreibzugriff in Nexy
 - App-Start, der Backend oder Kern erzwingt
 - Vaults im Repo

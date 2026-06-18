@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 from pathlib import Path
 import sqlite3
 import json
@@ -84,7 +84,7 @@ def main():
 
     con.close()
 
-    out = Path("docs/nexy/NEXY_LEGACY_SQLITE_SCHEMA_REPORT.json")
+    out = Path(".run/nexy_legacy_sqlite_schema_report.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(report, indent=2, ensure_ascii=False))

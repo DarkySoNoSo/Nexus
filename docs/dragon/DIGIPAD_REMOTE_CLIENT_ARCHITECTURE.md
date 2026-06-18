@@ -2,22 +2,22 @@
 
 ## Zweck
 
-Der DigiPad-Container ist die geschützte Außenschicht für externe DigiPet-/DigiDragon-Clients.
+Der DigiPad-Container ist die geschuetzte Aussenschicht fuer externe Digi-Dragon-/DigiPad-Clients.
 Fiona kann mit eigenem Handy spielen, ohne Zugriff auf Patricks privates Nexus zu erhalten.
 
 ## Rollen
 
-- Nexus privat: Patrick, Nexy, Chef, Collector, Dateien, Timeline, Logs
-- DigiPad Container: geschützter Spiel-/Companion-Bereich
+- Nexus privat: Patrick, Nexi, Collector, Dateien, Timeline, Logs
+- DigiPad Container: geschuetzter Spiel-/Remote-Bereich
 - Fiona-Profil: eigenes Family-Pad-Profil
-- DigiPet / DigiDragon: Pet, Training, Arena, Evolution, Battle-Snapshot
+- Digi Dragon: Training, Arena, Entwicklung, Battle-Snapshot
 - Battle Snapshot: sicherer Kampfexport ohne private Nexus-Daten
 
 ## Verbindliche Ports
 
 - Nexy Bridge: 8765, privat
-- Digi Dragon Bridge: 8777, interner Dragon-Core
-- DigiPad Container API: 8788, geschützte Außenschicht für Fiona/Remote-Pads
+- Digi Dragon Bridge: 8777, optionaler separater Bridge-Port
+- DigiPad Container API: 8788, geschuetzte Aussenschicht fuer Fiona/Remote-Pads
 
 ## Zugriff
 

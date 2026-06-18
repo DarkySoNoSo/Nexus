@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from pathlib import Path
@@ -479,6 +479,47 @@ def briefing():
         "facts": facts(8),
     }
 
+def mobile_chat_log(limit=20):
+    return db_rows("""
+        SELECT event_time, event_type, title, body
+        FROM nexy_events
+        WHERE source='android_nexi_chat'
+        ORDER BY created_at DESC
+        LIMIT ?
+    """, (limit,))
+
+def store_mobile_chat(prompt):
+    text = clean_text(prompt)
+    if not text:
+        raise ValueError("prompt missing")
+    con = connect()
+    user_id = uid()
+    response_id = uid()
+    ts = now()
+    reply = (
+        "Nexi ist verbunden. Auftrag gespeichert: "
+        + body_preview(text, 180)
+        + " | Naechster Schritt: als Fokus, Zeitstrahl oder Entscheidung weiter verarbeiten."
+    )
+    con.execute("""
+        INSERT INTO nexy_events
+        (id, created_at, event_time, source, source_ref, event_type, title, body, raw_payload, importance, confidence, status)
+        VALUES (?, ?, ?, 'android_nexi_chat', ?, 'user', 'USER', ?, ?, 2, 0.8, 'open')
+    """, (user_id, ts, ts, "mobile-chat:" + user_id, text, json.dumps({"prompt": text}, ensure_ascii=False)))
+    con.execute("""
+        INSERT INTO nexy_events
+        (id, created_at, event_time, source, source_ref, event_type, title, body, raw_payload, importance, confidence, status)
+        VALUES (?, ?, ?, 'android_nexi_chat', ?, 'system', 'SYSTEM', ?, ?, 2, 0.8, 'open')
+    """, (response_id, now(), now(), "mobile-chat:" + response_id, reply, json.dumps({"reply_to": user_id}, ensure_ascii=False)))
+    con.execute("""
+        INSERT INTO nexy_timeline
+        (id, event_id, timeline_time, actor, topic, summary, cause, consequence, visibility, status)
+        VALUES (?, ?, ?, 'Nexi', 'Mobile Auftrag', ?, 'Android Nexi-Kanal', 'Auftrag lokal gespeichert', 'normal', 'active')
+    """, (uid(), user_id, ts, body_preview(text, 240)))
+    con.commit()
+    con.close()
+    return reply
+
 class Handler(BaseHTTPRequestHandler):
     def send_json(self, obj, code=200):
         body = json.dumps(obj, ensure_ascii=False, indent=2).encode("utf-8")
@@ -526,6 +567,17 @@ class Handler(BaseHTTPRequestHandler):
             elif u.path == "/api/widget/messages":
                 items = communication_conversations(limit)
                 self.send_json({"ok": True, "items": items, "counters": communication_counters(items)})
+            elif u.path == "/api/communication/chef-log":
+                rows = mobile_chat_log(limit)
+                items = [
+                    {
+                        "role": clean_text(row.get("event_type")) or "system",
+                        "text": clean_text(row.get("body")),
+                        "created_at": row.get("event_time"),
+                    }
+                    for row in reversed(rows)
+                ]
+                self.send_json({"ok": True, "items": items})
             elif u.path in ["/api/files/list", "/api/v1/files/list"]:
                 rel_path = qs.get("path", [""])[0]
                 try:
@@ -574,6 +626,15 @@ class Handler(BaseHTTPRequestHandler):
                     "action": action,
                     "removed": action in ["done", "not_important"],
                 })
+            elif u.path == "/api/mobile/chef-chat":
+                if "application/json" in content_type.lower():
+                    payload = json.loads(body or "{}")
+                    prompt = clean_text(payload.get("prompt")) if isinstance(payload, dict) else ""
+                else:
+                    form = parse_qs(body)
+                    prompt = form.get("prompt", [""])[0].strip()
+                reply = store_mobile_chat(prompt)
+                self.send_json({"ok": True, "message": reply})
             else:
                 self.send_json({"ok": False, "error": "not found", "path": u.path}, 404)
         except json.JSONDecodeError as e:

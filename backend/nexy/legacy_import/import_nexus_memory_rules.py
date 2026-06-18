@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 from pathlib import Path
 import os, sys, re, hashlib, json
 from datetime import datetime, timezone

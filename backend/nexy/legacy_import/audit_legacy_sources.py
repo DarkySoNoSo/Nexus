@@ -107,7 +107,7 @@ def main():
                 item["error"] = str(e)
         report[name] = item
 
-    out_path = Path("docs/nexy/NEXY_LEGACY_AUDIT_REPORT.json")
+    out_path = Path(".run/nexy_legacy_audit_report.json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(report, indent=2, ensure_ascii=False))

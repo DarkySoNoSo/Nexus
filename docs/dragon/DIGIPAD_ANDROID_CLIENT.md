@@ -2,12 +2,12 @@
 
 ## Zweck
 
-Die DigiPad-APK ist ein eigener Remote-Client für das Fiona-Profil.
-Sie ist von der Nexus-Admin-APK getrennt.
+Die DigiPad-APK ist ein eigener Remote-Client fuer das Fiona-Profil.
+Sie ist von der Nexus-Android-APK getrennt.
 
 ## APKs
 
-- Nexus Admin APK: com.nexus.chefnative
+- Nexus Android APK: `com.nexus.chefnative` bleibt vorerst aus Update-Kompatibilitaet bestehen.
 - DigiPad Fiona APK: com.nexus.digipad
 
 ## Sicherheitsgrenze

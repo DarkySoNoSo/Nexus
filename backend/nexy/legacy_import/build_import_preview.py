@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 from pathlib import Path
 import sqlite3
 import json
@@ -6,8 +6,8 @@ import os
 from datetime import datetime, timezone
 
 ROOT = Path(os.environ.get("NEXUS_STORAGE", r"C:\MasterIndex_Storage"))
-OUT_JSON = Path("docs/nexy/NEXY_LEGACY_IMPORT_PREVIEW.json")
-OUT_MD = Path("docs/nexy/NEXY_LEGACY_IMPORT_PREVIEW.md")
+OUT_JSON = Path(".run/nexy_legacy_import_preview.json")
+OUT_MD = Path(".run/nexy_legacy_import_preview.md")
 
 SOURCES = {
     "patrick_context_profile": ROOT / "context" / "patrick_context_profile.md",

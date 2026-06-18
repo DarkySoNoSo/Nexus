@@ -7,8 +7,8 @@ Er ist eine Web-/PWA-Oberfläche auf Port 8788.
 
 ## Start
 
-cd ~/Nexus-cleanwork
-./tools/nexus_start_all.sh
+DigiPad hat keinen aktiven Sammelstartpfad im bereinigten Repo.
+DigiPad ist aktuell als Android-Flavour im Native-Projekt und als getrennte Remote-Client-Architektur dokumentiert.
 
 ## URL
 
@@ -42,7 +42,6 @@ Der Webclient nutzt nur:
 
 Er nutzt nicht:
 Nexy
-Master
 Collector
 Nachrichten
 Dateien
