@@ -8,6 +8,7 @@ import org.json.JSONObject;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 public final class NexusNotificationListener extends NotificationListenerService {
@@ -54,7 +55,8 @@ public final class NexusNotificationListener extends NotificationListenerService
             visual.put("notification_priority", n.priority);
             visual.put("notification_category", n.category == null ? JSONObject.NULL : n.category);
             visual.put("sub_text", subTextCs == null ? JSONObject.NULL : clean(subTextCs));
-            visual.put("has_attachment_hint", body.toLowerCase().contains("bild") || body.toLowerCase().contains("foto") || body.toLowerCase().contains("datei"));
+            String bodyLower = body.toLowerCase(Locale.ROOT);
+            visual.put("has_attachment_hint", bodyLower.contains("bild") || bodyLower.contains("foto") || bodyLower.contains("datei"));
             event.put("visual", visual);
             NexusConfig.increment(this, "notification_count");
             NexusEventSender.sendAsync(this, event.toString());

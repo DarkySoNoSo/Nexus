@@ -12,6 +12,7 @@ public final class NexusSmsReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (context == null || intent == null || !NexusConfig.enabled(context)) return;
+        if (!Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) return;
         try {
             SmsMessage[] messages = Telephony.Sms.Intents.getMessagesFromIntent(intent);
             if (messages == null || messages.length == 0) return;

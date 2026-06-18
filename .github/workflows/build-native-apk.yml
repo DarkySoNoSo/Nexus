@@ -31,24 +31,17 @@ jobs:
         with:
           gradle-version: "8.10.2"
 
-      - name: Build debug APKs
-        run: gradle :app:assembleNexusDebug :app:assembleDigipadDebug --stacktrace
+      - name: Build Nexus debug APK
+        run: gradle :app:assembleDebug --stacktrace
 
       - name: Collect APKs
         run: |
           mkdir -p out
-          cp 05_APP_ANDROID_NATIVE/app/build/outputs/apk/nexus/debug/app-nexus-debug.apk out/Nexus-Nexi-v1.6.176-nexus-debug.apk
-          cp 05_APP_ANDROID_NATIVE/app/build/outputs/apk/digipad/debug/app-digipad-debug.apk out/DigiPad-Fiona-v0.1-debug.apk
+          cp 05_APP_ANDROID_NATIVE/app/build/outputs/apk/debug/app-debug.apk out/Nexus-Nexi-v1.6.176-debug.apk
           ls -lh out
 
       - name: Upload Nexus APK
         uses: actions/upload-artifact@v4
         with:
-          name: Nexus-Nexi-v1.6.176-nexus-debug
-          path: out/Nexus-Nexi-v1.6.176-nexus-debug.apk
-
-      - name: Upload DigiPad APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: DigiPad-Fiona-v0.1-debug
-          path: out/DigiPad-Fiona-v0.1-debug.apk
+          name: Nexus-Nexi-v1.6.176-debug
+          path: out/Nexus-Nexi-v1.6.176-debug.apk
