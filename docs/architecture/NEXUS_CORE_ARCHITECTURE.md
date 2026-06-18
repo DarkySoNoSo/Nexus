@@ -1,51 +1,68 @@
 # Nexus Core Architecture
 
-## Ziel
+## Definition
 
-Nexus ist ein persönliches Betriebssystem mit digitalem Assistenten.
+Nexus ist das Geraest. Es stellt Repo-Struktur, Android-Shell, Backend-Anbindung, Dokumentation, Build-Pfade und Integrationspunkte bereit.
 
-## Rollen
+Nexi ist das einzige Hirn. Nexi verwaltet Kontext, Memory, Recall, Zeitstrahl, Entscheidungen, Review, Fakten/Claims/Unklarheiten und Lernregeln.
 
-### Nexy / Nexi
-Digitaler Assistent.
-Verwaltet Chat, Kontext, Zeitstrahl, Erinnerungen, Zusammenhänge und Zugriff auf den Master Index.
+Chef, Master und Index-Chef sind Legacy-Begriffe fuer Funktionen innerhalb von Nexi. Sie duerfen in neuer produktiver Logik nicht als getrennte Gehirne behandelt werden.
 
-### Chef
-Orchestrator.
-Steuert Aktionen, Jobs, Diagnose, Entscheidungen und Systemzustand.
+## Produktive Grenzen
 
-### Collector
-Datensammler.
-Sammelt Rohdaten wie Nachrichten, Dateien, Screenshots, Logs und Ereignisse.
-Collector bewertet nicht. Collector liefert Rohdaten.
+| Bereich | Status | Regel |
+|---|---|---|
+| Nexus | Geraest | Struktur, App, Backend-Anbindung, Docs |
+| Nexi | einziges Hirn | Memory, Entscheidungen, Zeitstrahl, Kontext |
+| Chef/Master/Index-Chef | Legacy innerhalb Nexi | nur noch als Funktionsnamen oder Migrationskontext |
+| Dragon | separat | nicht Teil des aktiven Nexus-Kerns |
+| DigiPad | separat | eigene Remote-/Pad-Schicht |
+| AI-Studio | Entwurf | keine Produktionswahrheit |
 
-### Master Index
-Langzeitgedächtnis.
-Speichert Dateien, Ereignisse, Personen, Themen, Fakten, Claims, Unsicherheiten und Verknüpfungen.
+## Aktive Repo-Struktur
 
-### Zeitstrahl
-Chronologische Wahrheit.
-Ordnet Ereignisse nach Zeitpunkt, Ursache, Folge, Quelle und Relevanz.
+```text
+.github/workflows/build-native-apk.yml
+05_APP_ANDROID_NATIVE/
+backend/nexy/
+docs/
+AGENTS.md
+README.md
+NEXUS_CHANGE_DRAFT_LEDGER.md
+build.gradle
+settings.gradle
+.gitignore
+```
 
-### Android App
-Cockpit.
-Startet immer ohne Backend.
-Keine automatische Serverpflicht beim App-Start.
-Funktionen laden erst nach Benutzeraktion.
+## Datenwahrheit
 
-### PC / Server
-Gehirn.
-Hält Backend, Worker, Queue, OpenAI-Anbindung, Index und lokale Tools.
+Private produktive Daten liegen nicht im Repo. `C:\MasterIndex_Storage` bleibt lokal und wird nicht nach Git kopiert.
 
-## Goldregeln
+Nexi speichert produktive Wahrheit strukturiert:
 
-1. App-Start muss immer offline funktionieren.
-2. Kein Servercall in onCreate oder showHome.
-3. Nexy ist Kontext- und Chat-Ebene.
-4. Chef ist Ausführungs- und Steuerungsebene.
-5. Collector sammelt nur Rohdaten.
-6. Master Index ist Gedächtnis.
-7. Zeitstrahl ist Pflicht.
-8. Jede Aussage muss später als Fakt, Claim oder Unklar markierbar sein.
-9. AI-Studio-Code bleibt Quarantäne.
-10. Stabile APKs sind Gold-Referenz.
+- Ereignisse
+- Kontext
+- Fakten, Claims und Unklarheiten
+- Entscheidungen
+- Zeitstrahl
+- Lessons
+- aktive Fokus-Punkte
+
+Rohdaten, lokale Vaults, Tokens, APKs, Logs und private Datenbanken bleiben ausserhalb des Repos.
+
+## Android-Regeln
+
+1. Die App startet offline.
+2. Kein harter Serverzwang beim Start.
+3. Widget und App teilen spaeter dieselbe Decision-Queue.
+4. UI zeigt nur produktive Begriffe: Nexi fuer Hirn/Assistenz; keine neuen sichtbaren Legacy-Begriffe.
+
+## Ausbau-Reihenfolge
+
+1. Nachrichten nach Unterhaltung buendeln.
+2. Entscheidungen robust speichern.
+3. Widget und App auf dieselbe Decision-Queue bringen.
+4. Zeitstrahl lesbar rendern.
+5. Dateienseite als echten Explorer bauen.
+6. Dragon sauber migrieren, ohne alte Begriffe sichtbar zu halten.
+7. Design danach.

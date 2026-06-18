@@ -64,6 +64,7 @@ public final class MainActivity extends Activity {
     private EditText digipadTokenInput;
     private WebView webView;
     private String currentPage = PAGE_HOME;
+    private String currentFilesPath = "";
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -212,7 +213,7 @@ public final class MainActivity extends Activity {
         titleRow.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout titleCol = vertical();
         topTitle = label("NEXUS", 23, true, Color.WHITE);
-        topSub = label("Mobile Master-Zentrale", 12, false, sub());
+        topSub = label("Mobile Nexi-Zentrale", 12, false, sub());
         titleCol.addView(topTitle);
         titleCol.addView(topSub);
         titleRow.addView(titleCol, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
@@ -237,7 +238,7 @@ public final class MainActivity extends Activity {
         digipadTokenInput = null;
         content.removeAllViews();
         topTitle.setText(BuildConfig.DIGIPAD_ONLY ? "DIGIPAD" : (PAGE_HOME.equals(page) ? "NEXUS" : title.toUpperCase()));
-        topSub.setText(BuildConfig.DIGIPAD_ONLY ? "Remote Client" : (PAGE_HOME.equals(page) ? "Mobile Master-Zentrale" : "Aktive Seite: " + title));
+        topSub.setText(BuildConfig.DIGIPAD_ONLY ? "Remote Client" : (PAGE_HOME.equals(page) ? "Mobile Nexi-Zentrale" : "Aktive Seite: " + title));
 
         if (!BuildConfig.DIGIPAD_ONLY && !PAGE_HOME.equals(page)) {
             LinearLayout back = panel();
@@ -258,22 +259,21 @@ public final class MainActivity extends Activity {
     }
 
     private void showHome() {
-        clearPage(PAGE_HOME, "Zentrale", "Kompakte Master-Zentrale: Kern, Companion, Eingang und System.");
+        clearPage(PAGE_HOME, "Zentrale", "Kompakte Nexi-Zentrale: Kern, Eingang, Dateien und System.");
         LinearLayout p = activePanel();
 
         p.addView(section("KERN"));
         p.addView(label("Safe-Start aktiv: keine automatische Serverabfrage beim Oeffnen.", 13, true, Color.rgb(238, 232, 224)));
         p.addView(label(accessText(), 12, false, Color.rgb(215, 213, 208)));
-        row(p, nav("Master ★", v -> showChefPage()), nav("Nexy", v -> showNexyPage()));
+        row(p, nav("Nexi", v -> showChefPage()), nav("Memory", v -> showNexyPage()));
         row(p, nav("Zeitstrahl", v -> showTimelinePage()), nav("Dateien", v -> showFilesPage()));
 
-        p.addView(section("COMPANION"));
-        LinearLayout dragon = miniCard();
-        dragon.addView(label("DigiDragon", 20, true, Color.WHITE));
-        dragon.addView(label("Mini-Hoehle - Nest - Training - Arena", 12, false, Color.rgb(238, 218, 198)));
-        dragon.addView(label(companionSummary(), 12, false, Color.rgb(220, 214, 205)));
-        row(dragon, nav("DigiDragon", v -> showCompanionPage()), nav("DigiPad", v -> showDigiPadPage()));
-        p.addView(dragon, card(8));
+        p.addView(section("SEPARAT"));
+        LinearLayout separate = miniCard();
+        separate.addView(label("Digi Dragon und DigiPad sind getrennt", 16, true, Color.WHITE));
+        separate.addView(label("Nicht Teil des aktiven Nexi-Kerns. Keine direkte Kernmutation.", 12, false, Color.rgb(220, 214, 205)));
+        row(separate, nav("Digi Dragon", v -> showCompanionPage()), nav("DigiPad", v -> showDigiPadPage()));
+        p.addView(separate, card(8));
 
         p.addView(section("EINGANG"));
         row(p, nav("Nachrichten", v -> showMessagesPage()), nav("Collector", v -> showCollectorPage()));
@@ -525,7 +525,7 @@ public final class MainActivity extends Activity {
         p.addView(digipadTokenInput, card(8));
 
         TextView out = logBox("DigiPad bereit.\nProfil: fiona\nAPI: " + digipadBase()
-                + "\nToken wird lokal auf diesem Gerät gespeichert.\nKeine Nexy-, Chef-, Collector-, Nachrichten- oder Datei-Endpunkte.");
+                + "\nToken wird lokal auf diesem Gerät gespeichert.\nKeine Nexi-, Collector-, Nachrichten- oder Datei-Endpunkte.");
         p.addView(out, card(8));
 
         row(p,
@@ -727,65 +727,14 @@ public final class MainActivity extends Activity {
     }
 
     private void showCompanionPage() {
-        clearPage(PAGE_COMPANION, "DigiDragon", "Master ★ · Minihöhle · Nest · Training · Arena");
+        clearPage(PAGE_COMPANION, "Digi Dragon", "Getrennt vom aktiven Nexi-Kern.");
         LinearLayout p = activePanel();
 
-        LinearLayout hero = panel();
-        hero.addView(label("MASTER ★", 11, true, orange()));
-        hero.addView(label("DigiDragon", 30, true, Color.WHITE));
-
-        TextView scene = label(
-                "✦ MINI-HÖHLE ✦\\n\\n"
-                        + "Glutkristalle · schwarzer Stein · rote Runen\\n"
-                        + "Nestbereich: dunkel, warm, geschützt\\n"
-                        + "DigiDragon: klein, rot-schwarz, wachsam\\n\\n"
-                        + "Der Drache hat hier Platz zum Wandern.\\n"
-                        + "Arena und Training sind getrennte Aktionen.",
-                15,
-                true,
-                Color.rgb(238, 218, 198)
-        );
-        scene.setGravity(Gravity.CENTER);
-        scene.setMinLines(9);
-        scene.setLineSpacing(dp(2), 1.08f);
-        scene.setBackground(box(18, Color.rgb(6, 6, 7), Color.rgb(120, 45, 25)));
-        hero.addView(scene, card(10));
-
-        row(hero,
-                nav("Status", v -> loadDragonEndpoint((TextView) hero.getTag(), "DigiDragon Status", "/api/dragon/status")),
-                nav("Nest", v -> loadDragonEndpoint((TextView) hero.getTag(), "DigiDragon Habitat", "/api/dragon/habitat"))
-        );
-
-        p.addView(hero, card(0));
-
-        p.addView(section("DRACHENSTATUS"));
-        TextView out = logBox("DigiDragon bereit.\\n"
-                + "Bridge: " + dragonBridgeBase() + "\\n"
-                + "Szene: Minihöhle / Nest / Feuer-Dunkel\\n\\n"
-                + "Drücke Status, Training oder Arena.");
-        hero.setTag(out);
+        p.addView(section("STATUS"));
+        TextView out = logBox("Digi Dragon bleibt separat.\n"
+                + "Bridge: " + dragonBridgeBase() + "\n"
+                + "Dieser Client mutiert den Nexi-Kern nicht direkt.");
         p.addView(out, card(8));
-
-        p.addView(section("AKTIONEN"));
-        row(p,
-                nav("Trainieren", v -> postDragonAction(out, "Training", "/api/dragon/train", "{\"training_type\":\"strength\"}")),
-                nav("Arena", v -> postDragonAction(out, "Arena", "/api/dragon/arena", "{}"))
-        );
-
-        row(p,
-                nav("Evolution", v -> postDragonAction(out, "Evolution", "/api/dragon/evolve", "{}")),
-                nav("Habitat", v -> loadDragonEndpoint(out, "DigiDragon Habitat", "/api/dragon/habitat"))
-        );
-
-        row(p,
-                nav("Füttern", v -> postDragonAction(out, "Füttern", "/api/dragon/feed", "{}")),
-                nav("Pflegen", v -> postDragonAction(out, "Pflegen", "/api/dragon/care", "{}"))
-        );
-
-        row(p,
-                nav("Freikampf", v -> postDragonAction(out, "Freikampf", "/api/dragon/freefight", "{}")),
-                nav("Master ★ fragen", v -> dragonChef(out))
-        );
 
         p.addView(section("SYSTEM"));
         endpointInput = input("http://127.0.0.1:8777", true);
@@ -795,10 +744,9 @@ public final class MainActivity extends Activity {
         row(p,
                 nav("Bridge speichern", v -> {
                     setDragonBridgeBase(endpointInput.getText().toString());
-                    out.setText("DigiDragon Bridge gespeichert:\\n" + dragonBridgeBase()
-                            + "\\n\\nDrücke Status oder Arena.");
+                    out.setText("Digi-Dragon-Bridge gespeichert:\n" + dragonBridgeBase());
                 }),
-                nav("Codex", v -> loadDragonEndpoint(out, "DigiDragon Codex", "/api/dragon/codex"))
+                nav("DigiPad", v -> showDigiPadPage())
         );
     }
 
@@ -822,7 +770,7 @@ public final class MainActivity extends Activity {
                 String text = dragonRender(title, body, base);
                 runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(text); });
             } catch (Exception ex) {
-                String err = "DigiDragon nicht erreichbar.\n"
+                String err = "Digi-Dragon-Bridge nicht erreichbar.\n"
                         + "Bridge: " + base + "\n"
                         + "Fehler: " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 160) + "\n\n"
                         + "Termux prüfen:\n"
@@ -843,7 +791,7 @@ public final class MainActivity extends Activity {
                 String text = dragonRender(title, body, base);
                 runOnUiThread(() -> { if (PAGE_COMPANION.equals(currentPage)) out.setText(text); });
             } catch (Exception ex) {
-                String err = "DigiDragon-Aktion fehlgeschlagen.\n"
+                String err = "Digi-Dragon-Aktion fehlgeschlagen.\n"
                         + "Aktion: " + title + "\n"
                         + "Bridge: " + base + "\n"
                         + "Fehler: " + ex.getClass().getSimpleName() + " " + cut(ex.getMessage(), 160);
@@ -926,10 +874,10 @@ public final class MainActivity extends Activity {
     private void dragonChef(TextView out) {
         String state = out == null ? "" : out.getText().toString();
         showChefPage();
-        chefInput.setText("DigiDragon-Zustand:\n"
+        chefInput.setText("Digi-Dragon-Zustand:\n"
                 + cutKeepLines(state, 1800)
-                + "\n\nBitte kurz und konkret: Welche nächste sinnvolle Aktion im DigiDragon-/Nexus-System?");
-        if (chefLog != null) chefLog.setText("DigiDragon-Zustand bereit. Drücke 'An Master ★ senden', wenn der Master ★ wirklich gefragt werden soll.");
+                + "\n\nBitte kurz und konkret: Welche nächste sinnvolle Aktion im separaten Digi-Dragon-System?");
+        if (chefLog != null) chefLog.setText("Digi-Dragon-Zustand bereit. Drücke 'An Nexi senden', wenn Nexi wirklich gefragt werden soll.");
     }
 
     private void companionTrain(TextView out) {
@@ -992,8 +940,8 @@ public final class MainActivity extends Activity {
     private void companionChef() {
         String state = companionSummary();
         showChefPage();
-        chefInput.setText("DigiDragon-Zustand:\n" + state + "\n\nBitte priorisiere kurz und konkret: Was ist der nächste sinnvolle Schritt?");
-        if (chefLog != null) chefLog.setText("DigiDragon-Zustand bereit. Druecke 'An Master ★ senden', wenn du den Chef wirklich fragen willst.");
+        chefInput.setText("Digi-Dragon-Zustand:\n" + state + "\n\nBitte priorisiere kurz und konkret: Was ist der nächste sinnvolle Schritt?");
+        if (chefLog != null) chefLog.setText("Digi-Dragon-Zustand bereit. Druecke 'An Nexi senden', wenn du Nexi wirklich fragen willst.");
     }
 
     private int companionInt(String key, int fallback) {
@@ -1030,11 +978,11 @@ public final class MainActivity extends Activity {
     }
 
     private String companionSummary() {
-        return "DigiDragon: " + dragonStage()
+        return "Digi Dragon: " + dragonStage()
                 + "\nLevel: " + companionLevel() + " | XP: " + companionInt("xp", 0) + " | Siege: " + companionInt("wins", 0)
                 + "\nEnergie: " + companionInt("energy", 80) + " | Stress: " + companionInt("stress", 15)
                 + "\nNaechste Evolution: " + nextEvolutionText()
-                + "\nPrinzip: lokal, kostenlos, erst Master ★ nutzt den Master-Kanal.";
+                + "\nPrinzip: lokal, getrennt, keine direkte Nexi-Kernmutation.";
     }
 
     private int clamp(int value, int min, int max) { return Math.max(min, Math.min(max, value)); }
@@ -1079,14 +1027,14 @@ public final class MainActivity extends Activity {
     }
 
     private void showChefPage() {
-        clearPage(PAGE_CHEF, "Master ★", "Direkter Master-Kanal. Klarer Auftrag, klare Antwort.");
+        clearPage(PAGE_CHEF, "Nexi", "Direkter Nexi-Kanal. Klarer Auftrag, klare Antwort.");
         LinearLayout p = activePanel();
-        chefInput = input("Dem Master ★ Kontext, Frage oder Auftrag schreiben...", false);
+        chefInput = input("Nexi Kontext, Frage oder Auftrag schreiben...", false);
         chefInput.setMinLines(3);
         chefInput.setMaxLines(7);
         p.addView(chefInput, card(8));
-        row(p, nav("An Master ★ senden", v -> sendChef()), nav("Master laden", v -> loadChefLog()));
-        chefLog = logBox("Master ★ Kanal wird geladen...");
+        row(p, nav("An Nexi senden", v -> sendChef()), nav("Nexi laden", v -> loadChefLog()));
+        chefLog = logBox("Nexi-Kanal wird geladen...");
         p.addView(chefLog, card(8));
         loadChefLog();
     }
@@ -1195,7 +1143,7 @@ public final class MainActivity extends Activity {
             card.addView(label(actionOf(item), 11, true, orange()));
             card.addView(label(cut(finalPreview, 310), 13, false, Color.rgb(232, 226, 216)));
             row(card, nav("Sehr wichtig", v -> decide(finalEventId, "very_important")), nav("Erledigt", v -> decide(finalEventId, "done")));
-            row(card, nav("Zeitstrahl", v -> decide(finalEventId, "timeline_focus")), nav("Master-Kontext", v -> putContext(finalSender, finalPreview)));
+            row(card, nav("Zeitstrahl", v -> decide(finalEventId, "timeline_focus")), nav("Nexi-Kontext", v -> putContext(finalSender, finalPreview)));
             list.addView(card, card(8));
             added++;
         }
@@ -1257,7 +1205,7 @@ public final class MainActivity extends Activity {
         showChefPage();
         chefInput.setText("Kontext zu Nachricht von " + sender + ":\n" + cut(preview, 220) + "\n\nMeine Einordnung: ");
         chefInput.requestFocus();
-        chefLog.setText("Kontext eintragen und an Master senden.");
+        chefLog.setText("Kontext eintragen und an Nexi senden.");
     }
 
     private void decide(String eventId, String action) {
@@ -1291,20 +1239,29 @@ public final class MainActivity extends Activity {
     }
 
     private void showFilesPage() {
-        clearPage(PAGE_FILES, "Dateien", "Ordner aus Nexus. Kein Roh-JSON.");
+        clearPage(PAGE_FILES, "Dateien", "Explorer. Ordner öffnen, Dateien prüfen, keine riskante Aktion.");
         LinearLayout p = activePanel();
-        row(p, nav("Neu laden", v -> showFilesPage()), nav("Web-Dateien", v -> showWebPage("/files")));
-        TextView info = label("Lade Ordner...", 13, true, Color.rgb(240, 235, 226));
-        p.addView(info, card(8));
+        TextView info = label("Lade Dateien...", 13, true, Color.rgb(240, 235, 226));
         LinearLayout list = vertical();
+        row(p, nav("Neu laden", v -> loadFiles(info, list, currentFilesPath)), nav("Root", v -> { currentFilesPath = ""; loadFiles(info, list, currentFilesPath); }));
+        row(p, nav("Aufwaerts", v -> { currentFilesPath = parentPath(currentFilesPath); loadFiles(info, list, currentFilesPath); }), nav("Zeitstrahl", v -> showTimelinePage()));
+        p.addView(info, card(8));
         p.addView(list);
+        loadFiles(info, list, currentFilesPath);
+    }
+
+    private void loadFiles(TextView info, LinearLayout list, String path) {
+        final String relPath = path == null ? "" : path;
+        info.setText("Lade Dateien...");
+        list.removeAllViews();
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
                 try {
-                    JSONObject root = new JSONObject(httpGet(base + "/api/v1/files/folders"));
+                    JSONObject root = new JSONObject(httpGet(base + "/api/files/list?limit=160&path=" + enc(relPath)));
+                    if (!root.optBoolean("ok", false)) { last = host(base) + ": ok=false"; continue; }
                     NexusConfig.rememberWorkingBaseUrl(this, base);
-                    runOnUiThread(() -> renderFolders(info, list, root, base));
+                    runOnUiThread(() -> renderFiles(info, list, root, base));
                     return;
                 } catch (Exception ex) { last = host(base) + ": " + ex.getClass().getSimpleName(); }
             }
@@ -1313,32 +1270,124 @@ public final class MainActivity extends Activity {
         }).start();
     }
 
-    private void renderFolders(TextView info, LinearLayout list, JSONObject root, String base) {
+    private void renderFiles(TextView info, LinearLayout list, JSONObject root, String base) {
         if (!PAGE_FILES.equals(currentPage)) return;
-        JSONArray items = null;
         JSONObject data = root.optJSONObject("data");
-        if (data != null) items = data.optJSONArray("items");
-        if (items == null) items = root.optJSONArray("items");
-        if (items == null) { info.setText("Quelle: " + host(base) + "\nAntwort konnte nicht als Ordnerliste gelesen werden."); return; }
-        info.setText("Quelle: " + host(base) + "\nOrdner: " + items.length());
+        if (data == null) { info.setText("Quelle: " + host(base) + "\nAntwort konnte nicht als Dateiliste gelesen werden."); return; }
+        JSONArray items = data.optJSONArray("items");
+        if (items == null) { info.setText("Quelle: " + host(base) + "\nKeine Dateiliste im Ergebnis."); return; }
+        currentFilesPath = data.optString("path", currentFilesPath);
+        String shownPath = currentFilesPath == null || currentFilesPath.isEmpty() ? "/" : currentFilesPath;
+        info.setText("Quelle: " + host(base) + "\nPfad: " + shownPath + "\nEintraege: " + items.length() + " von " + data.optInt("count", items.length()));
         list.removeAllViews();
-        int max = Math.min(35, items.length());
+        if (items.length() == 0) {
+            list.addView(logBox("Dieser Ordner ist leer."));
+            return;
+        }
+        int max = Math.min(160, items.length());
         for (int i = 0; i < max; i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null) continue;
+            boolean dir = item.optBoolean("is_dir", "dir".equals(item.optString("type", "")));
+            final String itemPath = item.optString("path", "");
+            final String itemName = item.optString("name", dir ? "Ordner" : "Datei");
             LinearLayout card = miniCard();
-            card.addView(label(item.optString("label", item.optString("name", "Ordner")), 14, true, Color.WHITE));
-            card.addView(label("Dateien: " + item.optInt("count", 0) + " | Ordner: " + item.optInt("folders", 0) + " | Tiefe: " + item.optInt("depth", 0), 11, false, sub()));
-            card.addView(label(cut(item.optString("path", ""), 160), 11, false, Color.rgb(180, 174, 166)));
+            card.addView(label((dir ? "[DIR] " : "[FILE] ") + itemName, 14, true, Color.WHITE));
+            card.addView(label(fileMeta(item), 11, false, sub()));
+            card.addView(label(cut(itemPath, 180), 11, false, Color.rgb(180, 174, 166)));
+            if (dir) {
+                row(card, nav("Oeffnen", v -> { currentFilesPath = itemPath; loadFiles(info, list, currentFilesPath); }), nav("Root", v -> { currentFilesPath = ""; loadFiles(info, list, currentFilesPath); }));
+            } else {
+                row(card, nav("Details", v -> info.setText("Datei: " + itemName + "\nPfad: " + itemPath + "\n" + fileMeta(item))), nav("Ordner", v -> loadFiles(info, list, currentFilesPath)));
+            }
             list.addView(card, card(6));
         }
+    }
+
+    private String parentPath(String path) {
+        if (path == null || path.trim().isEmpty()) return "";
+        String clean = path.replace("\\", "/");
+        int idx = clean.lastIndexOf('/');
+        return idx <= 0 ? "" : clean.substring(0, idx);
+    }
+
+    private String fileMeta(JSONObject item) {
+        boolean dir = item.optBoolean("is_dir", "dir".equals(item.optString("type", "")));
+        if (dir) return "Ordner";
+        long bytes = item.optLong("bytes", 0L);
+        String ext = item.optString("extension", "");
+        return "Datei | " + formatBytes(bytes) + (ext.isEmpty() ? "" : " | " + ext);
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes < 1024L) return bytes + " B";
+        if (bytes < 1024L * 1024L) return (bytes / 1024L) + " KB";
+        if (bytes < 1024L * 1024L * 1024L) return (bytes / (1024L * 1024L)) + " MB";
+        return (bytes / (1024L * 1024L * 1024L)) + " GB";
     }
 
     private void showTimelinePage() {
         clearPage(PAGE_TIMELINE, "Zeitstrahl", "Chronik und Entscheidungen. Erledigt bleibt sichtbar, aber markiert.");
         LinearLayout p = activePanel();
-        row(p, nav("Neu laden", v -> showTimelinePage()), nav("Web-Zeitstrahl", v -> showWebPage("/timeline")));
-        loadTextEndpoint("Zeitstrahl", "/api/timeline?limit=80");
+        row(p, nav("Neu laden", v -> showTimelinePage()), nav("Nachrichten", v -> showMessagesPage()));
+        TextView info = label("Lade Zeitstrahl...", 13, true, Color.rgb(240, 235, 226));
+        LinearLayout list = vertical();
+        p.addView(info, card(8));
+        p.addView(list);
+        loadTimeline(info, list);
+    }
+
+    private void loadTimeline(TextView info, LinearLayout list) {
+        info.setText("Lade Zeitstrahl...");
+        list.removeAllViews();
+        new Thread(() -> {
+            String last = "";
+            for (String base : NexusConfig.baseUrlCandidates(this)) {
+                try {
+                    JSONObject root = new JSONObject(httpGet(base + "/api/nexy/timeline?limit=80"));
+                    if (!root.optBoolean("ok", false)) { last = host(base) + ": ok=false"; continue; }
+                    NexusConfig.rememberWorkingBaseUrl(this, base);
+                    runOnUiThread(() -> renderTimeline(info, list, root, base));
+                    return;
+                } catch (Exception ex) {
+                    last = host(base) + ": " + ex.getClass().getSimpleName();
+                }
+            }
+            final String err = last;
+            runOnUiThread(() -> { info.setText("Zeitstrahl nicht erreichbar: " + err); list.removeAllViews(); });
+        }).start();
+    }
+
+    private void renderTimeline(TextView info, LinearLayout list, JSONObject root, String base) {
+        if (!PAGE_TIMELINE.equals(currentPage)) return;
+        JSONArray items = itemsArray(root);
+        list.removeAllViews();
+        int count = items == null ? 0 : items.length();
+        info.setText("Quelle: " + host(base) + "\nEintraege: " + count + "\nSortierung: neueste zuerst");
+        if (count == 0) {
+            list.addView(logBox("Noch keine Zeitstrahl-Eintraege. Nachrichten koennen ueber 'Zeitstrahl' markiert werden."));
+            return;
+        }
+        int max = Math.min(count, 80);
+        for (int i = 0; i < max; i++) {
+            JSONObject item = items.optJSONObject(i);
+            if (item == null) continue;
+            String time = item.optString("timeline_time", item.optString("event_time", item.optString("created_at", "")));
+            String actor = item.optString("actor", "Nexi");
+            String topic = item.optString("topic", item.optString("event_type", "Ereignis"));
+            String summary = item.optString("summary", item.optString("title", item.optString("body_preview", "")));
+            String cause = item.optString("cause", "");
+            String consequence = item.optString("consequence", "");
+            String status = item.optString("status", "active");
+
+            LinearLayout card = miniCard();
+            card.addView(label(cut(time, 19) + " | " + topic, 14, true, Color.WHITE));
+            card.addView(label(actor + " | Status: " + status, 11, true, orange()));
+            card.addView(label(cut(summary, 360), 13, false, Color.rgb(232, 226, 216)));
+            if (!cause.isEmpty()) card.addView(label("Ursache: " + cut(cause, 220), 11, false, sub()));
+            if (!consequence.isEmpty()) card.addView(label("Folge: " + cut(consequence, 220), 11, false, sub()));
+            list.addView(card, card(8));
+        }
     }
 
     private void showCollectorPage() {
@@ -1363,7 +1412,7 @@ public final class MainActivity extends Activity {
         clearPage(PAGE_WEB, "Nexus Web", "Bestehendes Web-Cockpit innerhalb der App.");
         LinearLayout p = activePanel();
         row(p, nav("Cockpit", v -> loadWeb("/")), nav("Kommunikation", v -> loadWeb("/communication")));
-        row(p, nav("Dateien", v -> loadWeb("/files")), nav("Master ★", v -> loadWeb("/chef")));
+        row(p, nav("Dateien", v -> loadWeb("/files")), nav("Nexi", v -> loadWeb("/chef")));
         webView = new WebView(this);
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
@@ -1400,7 +1449,7 @@ public final class MainActivity extends Activity {
 
     private void loadChefLog() {
         if (chefLog == null) return;
-        chefLog.setText("Lade Chef-Kanal...");
+        chefLog.setText("Lade Nexi-Kanal...");
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
@@ -1413,13 +1462,13 @@ public final class MainActivity extends Activity {
                 } catch (Exception ex) { last = host(base) + ": " + ex.getClass().getSimpleName(); }
             }
             final String err = last;
-            runOnUiThread(() -> { if (chefLog != null) chefLog.setText("Chef-Kanal nicht erreichbar: " + err); });
+            runOnUiThread(() -> { if (chefLog != null) chefLog.setText("Nexi-Kanal nicht erreichbar: " + err); });
         }).start();
     }
 
     private String renderChefLog(JSONObject root) {
         JSONArray items = root.optJSONArray("items");
-        if (items == null || items.length() == 0) return "Noch kein Chef-Kanal-Verlauf.";
+        if (items == null || items.length() == 0) return "Noch kein Nexi-Kanal-Verlauf.";
         StringBuilder sb = new StringBuilder();
         boolean tokenErrorShown = false;
         int shown = 0;
@@ -1429,7 +1478,7 @@ public final class MainActivity extends Activity {
             String text = cut(it.optString("text", it.optString("content", "")), 420);
             if (text.toLowerCase().contains("max_output_tokens")) {
                 if (!tokenErrorShown) {
-                    sb.append("SYSTEM: Chef-Antwort vom Server wegen max_output_tokens abgeschnitten. Serverlimit muss im Nexus-Core korrigiert werden.\n\n");
+                    sb.append("SYSTEM: Nexi-Antwort vom Server wegen max_output_tokens abgeschnitten. Serverlimit muss im Nexus-Core korrigiert werden.\n\n");
                     tokenErrorShown = true;
                     shown++;
                 }
@@ -1438,14 +1487,14 @@ public final class MainActivity extends Activity {
             sb.append(it.optString("role", "chef").toUpperCase()).append(": ").append(text).append("\n\n");
             shown++;
         }
-        return shown == 0 ? "Keine brauchbaren Chef-Nachrichten im Verlauf." : sb.toString().trim();
+        return shown == 0 ? "Keine brauchbaren Nexi-Nachrichten im Verlauf." : sb.toString().trim();
     }
 
     private void sendChef() {
         if (chefInput == null || chefLog == null) return;
         String prompt = chefInput.getText().toString().trim();
-        if (prompt.isEmpty()) { chefLog.setText("Schreib zuerst eine Nachricht an den Chef."); return; }
-        chefLog.setText("Sende an Chef...");
+        if (prompt.isEmpty()) { chefLog.setText("Schreib zuerst eine Nachricht an Nexi."); return; }
+        chefLog.setText("Sende an Nexi...");
         new Thread(() -> {
             String last = "";
             for (String base : NexusConfig.baseUrlCandidates(this)) {
@@ -1453,14 +1502,14 @@ public final class MainActivity extends Activity {
                     JSONObject res = new JSONObject(httpPost(base + "/api/mobile/chef-chat", "prompt=" + enc(prompt)));
                     if (res.optBoolean("ok", false)) {
                         NexusConfig.rememberWorkingBaseUrl(this, base);
-                        runOnUiThread(() -> { chefInput.setText(""); chefLog.setText(res.optString("message", "Chef-Auftrag gesendet.")); loadChefLog(); });
+                        runOnUiThread(() -> { chefInput.setText(""); chefLog.setText(res.optString("message", "Nexi-Auftrag gesendet.")); loadChefLog(); });
                         return;
                     }
                     last = host(base) + ": " + res.optString("message", "ok=false");
                 } catch (Exception ex) { last = host(base) + ": " + ex.getClass().getSimpleName(); }
             }
             final String err = last;
-            runOnUiThread(() -> chefLog.setText("Chef-Chat fehlgeschlagen: " + err));
+            runOnUiThread(() -> chefLog.setText("Nexi-Chat fehlgeschlagen: " + err));
         }).start();
     }
 
@@ -1498,7 +1547,7 @@ public final class MainActivity extends Activity {
                 + "Endpoint: " + NexusConfig.endpoint(this) + "\n"
                 + "Sendestatus: " + NexusConfig.lastSendStatus(this) + "\n"
                 + "Widget: " + NexusConfig.lastWidgetStatus(this) + "\n"
-                + "DigiDragon: Bridge 8777 | Lokal " + dragonStage() + " L" + companionLevel() + "\n"
+                + "Digi Dragon: separat | Lokal " + dragonStage() + " L" + companionLevel() + "\n"
                 + "Theme: " + themeName();
     }
 

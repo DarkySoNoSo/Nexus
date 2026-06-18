@@ -1,15 +1,29 @@
-# Nexy Memory Core
+# Nexi Memory Core
 
 ## Zweck
 
-Nexy ist der digitale Assistent von Nexus. Sie verwaltet Kontext, Zeitstrahl, Erinnerungen, Fakten, offene Themen und gelernte Regeln.
+Nexi ist das einzige Hirn von Nexus. Nexi verwaltet Kontext, Zeitstrahl, Erinnerungen, Fakten, Claims, Unklarheiten, Entscheidungen, offene Themen und gelernte Regeln.
 
-## Tabellen / Speicherbereiche
+Der Codepfad darf weiter `nexy` heissen. Die fachliche Rolle ist Nexi.
 
-### nexy_events
+## Legacy-Begriffe
+
+Chef, Master und Index-Chef sind keine getrennten produktiven Gehirne. Sie sind Legacy-Funktionen innerhalb von Nexi:
+
+- Chef = Entscheidungs- und Aktionslogik.
+- Master = Langzeit- und Index-Kontext.
+- Index-Chef = alte Bezeichnung fuer Orchestrierung und Priorisierung.
+
+Neue Logik soll diese Funktionen in Nexi modellieren, nicht neue parallele Wahrheiten erzeugen.
+
+## Speicherbereiche
+
+### nexi_events
+
 Rohereignisse aus Collector, Chat, Dateien, System und manuellen Eingaben.
 
-Felder:
+Pflichtfelder:
+
 - id
 - created_at
 - event_time
@@ -23,10 +37,12 @@ Felder:
 - confidence
 - status
 
-### nexy_timeline
+### nexi_timeline
+
 Chronologisch verdichtete Ereignisse.
 
-Felder:
+Pflichtfelder:
+
 - id
 - event_id
 - timeline_time
@@ -40,10 +56,12 @@ Felder:
 - visibility
 - status
 
-### nexy_context
-Semantische Verknüpfungen.
+### nexi_context
 
-Felder:
+Semantische Verknuepfungen.
+
+Pflichtfelder:
+
 - id
 - subject_type
 - subject_id
@@ -54,10 +72,12 @@ Felder:
 - reason
 - created_at
 
-### nexy_facts
-Fakten-/Claim-/Unklarheits-Speicher.
+### nexi_facts
 
-Felder:
+Fakten-, Claim- und Unklarheits-Speicher.
+
+Pflichtfelder:
+
 - id
 - statement
 - classification
@@ -68,15 +88,37 @@ Felder:
 - valid_to
 - status
 
-classification:
+Erlaubte Klassifikation:
+
 - fact
 - claim
 - unclear
 
-### nexy_lessons
+### nexi_decisions
+
+Robuste Entscheidungsspeicherung fuer App, Widget und Backend.
+
+Pflichtfelder:
+
+- id
+- created_at
+- source
+- source_event_id
+- conversation_id
+- decision_type
+- decision_value
+- reason
+- actor
+- sync_status
+- applied_at
+- rollback_ref
+
+### nexi_lessons
+
 Gelernte Regeln.
 
-Felder:
+Pflichtfelder:
+
 - id
 - lesson
 - trigger_context
@@ -87,10 +129,12 @@ Felder:
 - last_used_at
 - status
 
-### nexy_active_focus
+### nexi_active_focus
+
 Aktuelle offene Themen.
 
-Felder:
+Pflichtfelder:
+
 - id
 - focus_name
 - description
@@ -103,10 +147,11 @@ Felder:
 
 ## Grundregeln
 
-1. Collector schreibt Rohdaten nach nexy_events.
-2. Nexy liest events, facts, context, timeline und active_focus.
-3. Chef darf Aktionen auslösen, aber nicht ungeprüft Fakten überschreiben.
-4. Zeitstrahl entsteht aus Ereignissen, nicht aus Bauchgefühl.
+1. Collector schreibt Rohdaten nach events.
+2. Nexi liest events, facts, context, timeline, decisions und active_focus.
+3. Entscheidungen werden in einer Queue gespeichert, die App und Widget gemeinsam nutzen koennen.
+4. Zeitstrahl entsteht aus Ereignissen, nicht aus Vermutungen.
 5. Fakten brauchen Quelle oder bleiben claim/unclear.
-6. Lessons entstehen aus realen Fehlern oder bestätigten Mustern.
-7. Active Focus hält nur aktuelle Baustellen, nicht alles.
+6. Lessons entstehen aus realen Fehlern, bestaetigten Mustern oder expliziten Patrick-Regeln.
+7. Active Focus haelt aktuelle Baustellen, nicht den kompletten Speicher.
+8. Dragon und DigiPad duerfen Nexi nicht direkt als produktiven Kern veraendern.

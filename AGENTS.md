@@ -1,32 +1,59 @@
-# Nexus System-Agetist Guidelines & Single Source of Truth
-Dieses Dokument definiert für die KI (den AI Coding Agent) die fundamentale Struktur, Identität und unumstößlichen Governance-Regeln von Patricks Nexus-System v40.44.
+# Nexus Agent Guidelines
 
-## 1. Das Fundament (Die „Single Source of Truth“)
-Diese Dateien definieren, wer du bist und wie Nexus funktioniert:
+Dieses Dokument ist der erste Leseanker fuer jeden Agenten im Repository.
 
-* **NEXUS_GESAMTDOKUMENTATION_STAND_20260607.md**: Dies ist die wichtigste Datei. Sie enthält das Zielbild von Nexus, die Orchestrationslogik des „Chefs“ und wie das System mit Daten, Kommunikation und Kontext umgeht.
-* **NEXUS_ARCHITEKTUR.md**: Beschreibt die technische Struktur, die Single-Source-of-Truth-Prinzipien und die Rolle der verschiedenen Clients (Web App, Android-App, Widget).
-* **INDEX_CHEF_LOGIK.md**: Essentiell für das Verständnis, wie der „Index-Chef“ Entscheidungen trifft, Kontext bewertet und das System steuert.
+## Single Source of Truth
 
-## 2. Kontext & Governance (Die Regeln)
-Damit die KI keine „falsche“ Wahrheit bildet, muss sie diese Regeln kennen:
+1. Nexus ist das Geraest: Repo, Android-Shell, Backend-Anbindung, Dokumentation und Integrationsrahmen.
+2. Nexi ist das einzige Hirn: Kontext, Memory, Recall, Zeitstrahl, Entscheidungen, Review und Lernen.
+3. Chef, Master und Index-Chef sind Legacy-Begriffe fuer Funktionen innerhalb von Nexi. Sie sind keine getrennten produktiven Gehirne.
+4. Dragon ist separat. Dragon-Code gehoert nicht zum aktiven Nexus-Kern.
+5. DigiPad ist separat. DigiPad ist eine eigene Remote-/Pad-Schicht und kein Nexi-Kern.
+6. AI-Studio ist Entwurf/Experiment. AI-Studio ist keine Produktionswahrheit.
 
-* **NEXUS_CHEF_CONTEXT_INTERFACE_GUIDE_20260607.md**: Definiert den Schnittstellen-Vertrag. Damit weiß die KI, wie sie Kontext lesen und schreiben darf, ohne die Datenbasis zu korrumpieren.
-* **SICHERHEIT_UND_ZUGRIFF.md**: Hier ist definiert, wie die Authentifizierung (Legacy/HMAC) und der Zugriff gehandhabt werden muss.
-* **docs/rules/NEXUS_PROTECTED_CORE_POLICY.md**: Definiert den zentralen geschützten Kern. Nexy, Zeitstrahl, Kontext, Fakten, Claims, Lessons und Quellenregister gehören zum Kern.
-* **docs/rules/WRITE_DOCUMENTATION_POLICY.md**: Definiert die Dokumentationspflicht. Schreiben ab Schutzklasse GELB ist nur mit nachvollziehbarer Dokumentation erlaubt.
+## Aktiver Repo-Kern
 
-## 3. Aktueller Status (Der „Startpunkt“)
-* **AKTUELLER_AUDIT_STATUS.md**: Gibt der KI ein Bild davon, wo das Projekt aktuell steht und welche Probleme/Governance-Aufgaben gerade offen sind.
-* **NEXUS_CHANGE_DRAFT_LEDGER.md**: Dies ist dein „Arbeitsjournal“. Die KI muss wissen, welche Änderungen als DRAFT gelistet sind, um nicht mit alten Annahmen zu arbeiten.
+Der aktive Kern besteht aus:
 
-## 4. Protected-Core-Pflicht
+- `.github/workflows/build-native-apk.yml`
+- `05_APP_ANDROID_NATIVE/`
+- `backend/nexy/`
+- `docs/`
+- `AGENTS.md`
+- `README.md`
+- `NEXUS_CHANGE_DRAFT_LEDGER.md`
+- `build.gradle`
+- `settings.gradle`
+- `.gitignore`
 
-Ab 2026-06-17 gilt verbindlich:
+Alte Archive, Quarantaenen, generierte Reports und private lokale Daten gehoeren nicht in den aktiven Git-Kern.
 
-* Nexy, Zeitstrahl, Kontext, Fakten, Claims, Lessons und Quellenregister sind Schutzklasse ROT.
-* Änderungen ab Schutzklasse GELB benötigen Dokumentation.
-* ROT-Änderungen benötigen zusätzlich Vault/Backup, Quelle, Hash, Klassifikation, Vorher/Nachher-Prüfung, Healthcheck und Rollback-Hinweis.
-* DigiDragon und DigiPad dürfen den Kern nicht direkt verändern.
-* Kommunikationsrohdaten dürfen nicht blind als Fakten gespeichert werden.
-* Vaults und lokale Legacy-Speicher dürfen nicht ins Repository committed werden.
+## Verbindliche Doku-Anker
+
+- `README.md`: kurzer Einstieg und aktive Struktur.
+- `docs/architecture/NEXUS_CORE_ARCHITECTURE.md`: Rollen, Grenzen und produktive Architektur.
+- `docs/nexy/NEXY_MEMORY_CORE.md`: Nexi-Memory-Modell und Datenregeln.
+- `docs/nexy/NEXY_GESAMTKONZEPT.md`: Zielbild und Arbeitsanker fuer Nexi.
+- `docs/rules/NEXUS_PROTECTED_CORE_POLICY.md`: Schutzklasse fuer Kernzustand.
+- `docs/rules/WRITE_DOCUMENTATION_POLICY.md`: Dokumentationspflicht.
+
+## Arbeitsreihenfolge
+
+1. Ordnung herstellen.
+2. Reparatur mit Belegen durchfuehren.
+3. Ausbau erst nach stabiler Struktur.
+
+Keine Funktionsreparatur darf alte Begriffe, Testartefakte oder archivierte Entwuerfe wieder als aktive Wahrheit einfuehren.
+
+## Private Daten
+
+`C:\MasterIndex_Storage` bleibt lokal. Private Daten, Tokens, Datenbanken, APK-Artefakte, lokale Logs und Legacy-Speicher werden nicht ins Repo kopiert.
+
+Secrets werden nie in Git, Markdown, README, Logs oder generierte Reports geschrieben.
+
+## Aenderungsregeln
+
+- Kein Commit ohne ausdrueckliche Freigabe.
+- Vor Entfernung aus Git muss ein externes Archiv existieren, wenn der entfernte Inhalt nicht bereits anderweitig gesichert ist.
+- Riskante Aktionen brauchen nachvollziehbaren Vorher/Nachher-Zustand.
+- Erfolg wird nur behauptet, wenn Status, Test oder Log ihn belegt.

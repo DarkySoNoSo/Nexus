@@ -1,83 +1,35 @@
 # Nexus Modulregister
 
-Status: offizieller Ordnungsanker für Nexus/Nexy/Digi Dragon.
+Status: offizieller Ordnungsanker fuer Nexus und Nexi.
 
 ## Grundregel
 
 Keine neue Funktion ohne Modulplatz, Healthcheck und Rollback-Pfad.
 
-## Module
+## Aktive Module
 
-| Modul | Rolle | Pfad | DB | Port | Start | Status |
-|---|---|---|---|---:|---|---|
-| Nexus App | Android Shell / mobiles Cockpit | 05_APP_ANDROID_NATIVE | Android lokal | - | APK | aktiv |
-| Nexy | Gedächtnis, Kontext, Recall, Zeitstrahl, Briefing | backend/nexy | data/nexy.db | 8765 | tools/start_nexy_bridge.ps1 / später sh | aktiv |
-| Digi Dragon | Companion/Game-Schicht | backend/companion | data/digi_dragon.db | 8777 | tools/start_digi_dragon_bridge.sh | aktiv |
-| Chef | Analyse, Ausführung, Entscheidung | backend / API | projektabhängig | variabel | manuell/Bridge | kontrolliert |
-| Collector | Rohdaten, SMS, Notifications, Dateien | Android / Collector | Android/Backend | variabel | App | kontrolliert |
+| Modul | Rolle | Pfad | Status |
+|---|---|---|---|
+| Nexus Android | mobile Shell und Bedienoberflaeche | `05_APP_ANDROID_NATIVE/` | aktiv |
+| Nexi | einziges Hirn: Memory, Kontext, Recall, Zeitstrahl, Entscheidungen | `backend/nexy/` | aktiv |
+| Dokumentation | Architektur, Regeln, Memory, Grenzen | `docs/` | aktiv |
+| Build | native APK Pipeline | `.github/workflows/build-native-apk.yml` | aktiv |
 
-## Rollenreinheit
+## Separierte Bereiche
 
-- Nexus = Gesamtsystem.
-- Nexy = Gedächtnis, Kontext, Zeitstrahl, Recall.
-- Chef = Analyse, Entscheidung, Ausführung.
-- Collector = Rohdaten.
-- Digi Dragon = Companion, Motivation, Spielschicht.
+| Bereich | Status | Regel |
+|---|---|---|
+| Dragon | separat | nicht als aktiver Nexus-Kern behandeln |
+| DigiPad | separat | eigene Remote-/Pad-Schicht |
+| AI-Studio | Entwurf | keine Produktionswahrheit |
+| Chef/Master/Index-Chef | Legacy innerhalb Nexi | keine parallele Hirn-Architektur |
 
 ## Harte Grenzen
 
+- Nexus = Geraest.
+- Nexi = einziges Hirn.
+- Private Daten bleiben in `C:\MasterIndex_Storage` und werden nicht committed.
+- Alte Archive, Quarantaenen und generierte Reports gehoeren nicht in den aktiven Kern.
 - Android-App muss offline starten.
 - Kein Servercall beim App-Start.
-- Digi Dragon darf keine Chef-Aktion automatisch auslösen.
-- Digi Dragon darf Nexy später lesen, aber nicht ungefragt verändern.
-- Lokale DB-Dateien werden nicht committed.
-- Jede Bridge braucht eigenen Healthcheck.
-- Jeder Ausbau braucht vorher Doctor grün oder dokumentierten Grund.
-
-
-## Verbindliche Portkarte
-
-| Dienst | Port | Richtiger Test | Falsche Annahme |
-|---|---:|---|---|
-| Nexy Bridge | 8765 | http://127.0.0.1:8765/api/nexy/status | Digi Dragon auf 8765 |
-| Digi Dragon Bridge | 8777 | http://127.0.0.1:8777/api/dragon/status | Port 8766 oder 0.0.0.0 im Browser |
-
-Port 8766 ist aktuell kein offizieller Nexus-Dienst.
-0.0.0.0 ist nur eine Bind-Adresse und wird nicht als Browser-/App-Ziel verwendet.
-
-## Ports
-
-- Nexy Bridge: 8765
-- Digi Dragon Bridge: 8777
-
-## Nächste erlaubte Schritte
-
-1. Doctor grün bekommen.
-2. Start/Stop-Scripts stabilisieren.
-3. Android Digi-Dragon-Seite erst danach.
-
-
-## DigiPad Container
-
-| Modul | Rolle | Pfad | DB | Port | Start | Status |
-|---|---|---|---|---:|---|---|
-| DigiPad Container | geschützte Family-/Remote-Pad-Schicht für Fiona/andere Pads | backend/companion/pad_container_api.py | data/digipad_container.db | 8788 | tools/start_digipad_container.sh | aktiv |
-
-### Sicherheitsgrenze
-
-Fiona/Remote-Pads sprechen nur mit Port 8788 und nur mit /api/pad/* Endpunkten.
-Nexy 8765, Digi Dragon 8777 und private Nexus-Endpunkte bleiben für Remote-Pads getrennt.
-
-### Token
-
-DigiPad-Profile nutzen lokale Tokens.
-Tokens werden nicht committed.
-
-
-## Verbindliche Remote-Portkarte
-
-- Nexy Bridge: 8765, privat
-- Digi Dragon Bridge: 8777, interner Core
-- DigiPad Container API: 8788, geschützte Remote-Schicht
-
-Fionas Handy nutzt später 8788, nicht 8765 und nicht 8777.
+- Jede Bridge braucht eigenen Healthcheck, bevor sie als aktiv gilt.

@@ -12,6 +12,8 @@ public final class NexusConfig {
     public static final String DEFAULT_ENDPOINT = "http://100.107.24.67:8081/api/communication/ingest";
     public static final String FALLBACK_ENDPOINT = "http://192.168.1.216:8081/api/communication/ingest";
     public static final String LOCAL_ENDPOINT = "http://192.168.1.216:8081/api/communication/ingest";
+    public static final String DEFAULT_NEXI_ENDPOINT = "http://100.107.24.67:8765/api/communication/ingest";
+    public static final String FALLBACK_NEXI_ENDPOINT = "http://192.168.1.216:8765/api/communication/ingest";
 
     private NexusConfig() {}
 
@@ -42,7 +44,9 @@ public final class NexusConfig {
         addEndpoint(set, p.getString("endpoint", ""));
         addEndpoint(set, p.getString("last_ok_endpoint", ""));
         addEndpoint(set, DEFAULT_ENDPOINT);
+        addEndpoint(set, DEFAULT_NEXI_ENDPOINT);
         addEndpoint(set, FALLBACK_ENDPOINT);
+        addEndpoint(set, FALLBACK_NEXI_ENDPOINT);
         addEndpoint(set, LOCAL_ENDPOINT);
         return new ArrayList<>(set);
     }

@@ -101,6 +101,23 @@ CREATE TABLE IF NOT EXISTS nexy_active_focus (
     status TEXT DEFAULT 'active',
     updated_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS nexy_decisions (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    source TEXT,
+    source_event_id TEXT,
+    conversation_id TEXT,
+    decision_type TEXT,
+    decision_value TEXT,
+    reason TEXT,
+    actor TEXT,
+    sync_status TEXT DEFAULT 'queued',
+    applied_at TEXT,
+    rollback_ref TEXT,
+    raw_payload TEXT,
+    status TEXT DEFAULT 'active'
+);
 """)
 
     con.commit()
@@ -149,7 +166,7 @@ def set_focus(focus_name, description="", priority=0, next_action="", related_co
 def summary():
     con = connect()
     cur = con.cursor()
-    tables = ["nexy_events","nexy_timeline","nexy_context","nexy_facts","nexy_lessons","nexy_active_focus"]
+    tables = ["nexy_events","nexy_timeline","nexy_context","nexy_facts","nexy_lessons","nexy_active_focus","nexy_decisions"]
     out = {}
     for t in tables:
         out[t] = cur.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
