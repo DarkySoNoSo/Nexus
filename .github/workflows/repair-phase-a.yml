@@ -1,0 +1,64 @@
+name: Repair Phase A
+
+on:
+  push:
+    branches:
+      - repair/2026-06-19-stabilize-routing-permissions
+    paths:
+      - "scripts/repair_phase_a.py"
+      - ".github/workflows/repair-phase-a.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+\ concurrency: repair-phase-a-${{ github.ref }}
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/2026-06-19-stabilize-routing-permissions
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Apply repair patch
+        run: python3 scripts/repair_phase_a.py
+
+      - name: Show changed files
+        run: git status --short
+
+      - name: Build and lint
+        run: python3 scripts/repair_phase_a.py --check
+
+      - name: Commit repair result
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No repair changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 05_APP_ANDROID_NATIVE/app/src/main/java/com/nexus/collector/MainActivity.java \
+                  backend/nexy/nexy_bridge_api.py \
+                  .github/workflows/build-native-apk.yml \
+                  docs/release/APK_RELEASE_POLICY.md \
+                  NEXUS_CHANGE_DRAFT_LEDGER.md
+          git commit -m "fix(android): stabilize web routing permissions and update flow"
+          git push origin HEAD:repair/2026-06-19-stabilize-routing-permissions
