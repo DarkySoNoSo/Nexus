@@ -11,7 +11,8 @@ on:
 
 permissions:
   contents: write
-\ concurrency: repair-phase-a-${{ github.ref }}
+
+concurrency: repair-phase-a-${{ github.ref }}
 
 jobs:
   repair:
