@@ -251,6 +251,22 @@ def communication_conversations(limit=100):
     out.sort(key=lambda item: item["latest_event_time"], reverse=True)
     return out[:limit]
 
+def communication_search(query, limit=2000):
+    q = clean_text(query)
+    if not q:
+        return []
+    like = f"%{q}%"
+    rows = db_rows("""
+        SELECT id, created_at, event_time, source, source_ref, event_type, title, body, raw_payload, importance, confidence, status
+        FROM nexy_events
+        WHERE status != 'deleted'
+          AND (title LIKE ? OR body LIKE ? OR source LIKE ? OR event_type LIKE ? OR raw_payload LIKE ?)
+        ORDER BY COALESCE(event_time, created_at) DESC
+        LIMIT ?
+    """, (like, like, like, like, like, limit))
+    decisions = latest_decisions(rows)
+    return [render_event(row, decisions) for row in rows]
+
 def communication_counters(items):
     open_items = [i for i in items if i.get("latest_decision") not in ["done", "not_important"]]
     return {
@@ -561,6 +577,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True, "briefing": briefing()})
             elif u.path == "/api/communication/events":
                 self.send_json({"ok": True, "items": communication_events(limit)})
+            elif u.path == "/api/communication/search":
+                q = qs.get("q", [""])[0].strip()
+                if not q:
+                    self.send_json({"ok": False, "error": "missing query parameter q"}, 400)
+                else:
+                    items = communication_search(q, limit)
+                    self.send_json({"ok": True, "query": q, "items": items, "count": len(items)})
             elif u.path == "/api/communication/conversations":
                 items = communication_conversations(limit)
                 self.send_json({"ok": True, "items": items, "counters": communication_counters(items)})
@@ -597,6 +620,21 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({"ok": False, "error": "missing query parameter q"}, 400)
                 else:
                     self.send_json({"ok": True, "result": search(q, limit)})
+            elif u.path == "/communication":
+                items = communication_conversations(limit)
+                self.send_json({"ok": True, "page": "communication", "items": items, "counters": communication_counters(items)})
+            elif u.path == "/files":
+                rel_path = qs.get("path", [""])[0]
+                try:
+                    self.send_json({"ok": True, "page": "files", "data": file_listing(rel_path, limit)})
+                except (ValueError, FileNotFoundError) as e:
+                    self.send_json({"ok": False, "error": str(e), "path": rel_path}, 400)
+            elif u.path == "/timeline":
+                self.send_json({"ok": True, "page": "timeline", "items": timeline(limit)})
+            elif u.path == "/nexi":
+                self.send_json({"ok": True, "page": "nexi", "briefing": briefing()})
+            elif u.path == "/status":
+                self.send_json({"ok": True, "page": "status", "counts": counts()})
             else:
                 self.send_json({"ok": False, "error": "not found", "path": u.path}, 404)
         except Exception as e:

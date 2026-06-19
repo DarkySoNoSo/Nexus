@@ -240,7 +240,11 @@ public final class MainActivity extends Activity {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
         ));
-        frame.addView(dragonWanderer(), new FrameLayout.LayoutParams(
+        View petOverlay = dragonWanderer();
+        petOverlay.setClickable(false);
+        petOverlay.setFocusable(false);
+        petOverlay.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        frame.addView(petOverlay, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
         ));
@@ -938,7 +942,19 @@ public final class MainActivity extends Activity {
 
     private void showStatusOnly() {
         clearPage(PAGE_STATUS, "Status", "Aktueller App- und Collector-Zustand.");
-        activePanel().addView(label(status(), 13, false, Color.rgb(230, 225, 216)));
+        LinearLayout p = activePanel();
+        p.addView(section("ZUGRIFFE"));
+        p.addView(label(permissionRepairText(), 13, false, Color.rgb(230, 225, 216)));
+        row(p,
+                nav("Notify Zugriff oeffnen", v -> openNotificationAccess()),
+                nav("SMS erlauben", v -> requestSms())
+        );
+        if (Build.VERSION.SDK_INT >= 33) {
+            row(p, nav("Post Notifications", v -> requestPostNotifications()));
+        }
+        row(p, nav("Widget aktualisieren", v -> { NexusMessagesWidgetProvider.updateAll(this); showStatusOnly(); }));
+        p.addView(section("SYSTEM"));
+        p.addView(label(status(), 13, false, Color.rgb(230, 225, 216)));
     }
 
     private void showDragonPage() {
@@ -3083,8 +3099,8 @@ public final class MainActivity extends Activity {
     private void showWebPage(String path) {
         clearPage(PAGE_WEB, "Nexus Web", "Bestehendes Web-Cockpit innerhalb der App.");
         LinearLayout p = activePanel();
-        row(p, nav("Cockpit", v -> loadWeb("/")), nav("Kommunikation", v -> loadWeb("/communication")));
-        row(p, nav("Dateien", v -> loadWeb("/files")), nav("Nexi", v -> loadWeb("/chef")));
+        row(p, nav("Cockpit", v -> loadWeb("/api/nexy/status")), nav("Kommunikation", v -> loadWeb("/api/communication/conversations?limit=200")));
+        row(p, nav("Dateien", v -> loadWeb("/api/files/list?path=&limit=200")), nav("Nexi", v -> loadWeb("/api/nexy/briefing")));
         webView = new WebView(this);
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
@@ -3098,7 +3114,7 @@ public final class MainActivity extends Activity {
 
     private void loadWeb(String path) {
         if (webView == null) return;
-        webView.loadUrl(NexusConfig.baseUrl(this) + (path == null || path.isEmpty() ? "/" : path));
+        webView.loadUrl(nexyBridgeBase() + (path == null || path.isEmpty() ? "/" : path));
     }
 
     private void loadTextEndpoint(String title, String path) {
@@ -3240,6 +3256,30 @@ public final class MainActivity extends Activity {
     }
     private boolean notificationAccess() { String enabled = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners"); return enabled != null && enabled.toLowerCase(Locale.ROOT).contains(getPackageName().toLowerCase(Locale.ROOT)); }
     private void openNotificationAccess() { startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); }
+
+    private boolean postNotificationsPermission() {
+        return Build.VERSION.SDK_INT < 33 || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestPostNotifications() {
+        if (Build.VERSION.SDK_INT >= 33 && !postNotificationsPermission()) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1002);
+        } else {
+            showStatusOnly();
+        }
+    }
+
+    private String permissionRepairText() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Benachrichtigungszugriff: ").append(notificationAccess() ? "aktiv" : "fehlt").append("\n");
+        sb.append("SMS: ").append(smsPermission() ? "erlaubt" : "fehlt").append("\n");
+        if (Build.VERSION.SDK_INT >= 33) {
+            sb.append("Post Notifications: ").append(postNotificationsPermission() ? "erlaubt" : "fehlt").append("\n");
+        }
+        sb.append("Paket: ").append(getPackageName()).append("\n");
+        sb.append("Wichtig: Zugriffe bleiben nur stabil, wenn neue APKs als Update mit gleicher Signatur installiert werden.");
+        return sb.toString();
+    }
 
     private void sendTestEvent() {
         try {
