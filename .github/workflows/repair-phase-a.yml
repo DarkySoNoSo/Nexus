@@ -42,14 +42,9 @@ jobs:
       - name: Apply repair patch
         run: python3 scripts/repair_phase_a.py
 
-      - name: Show changed files
-        run: git status --short
-
-      - name: Build and lint
-        run: python3 scripts/repair_phase_a.py --check
-
-      - name: Commit repair result
+      - name: Commit repair patch before validation
         run: |
+          git status --short
           if [ -z "$(git status --porcelain)" ]; then
             echo "No repair changes to commit."
             exit 0
@@ -63,3 +58,6 @@ jobs:
                   NEXUS_CHANGE_DRAFT_LEDGER.md
           git commit -m "fix(android): stabilize web routing permissions and update flow"
           git push origin HEAD:repair/2026-06-19-stabilize-routing-permissions
+
+      - name: Validate repaired tree
+        run: python3 scripts/repair_phase_a.py --check
