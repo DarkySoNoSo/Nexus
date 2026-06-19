@@ -224,11 +224,11 @@ public final class MainActivity extends Activity {
         scroll.addView(root);
 
         LinearLayout titleCol = vertical();
-        topTitle = logoLabel("NEXIS");
-        topSub = label("Mobile Nexi-Zentrale", 12, false, sub());
+        topTitle = logoLabel("NEXUS");
+        topSub = label("", 12, false, sub());
         topSub.setGravity(Gravity.CENTER);
         titleCol.addView(topTitle);
-        titleCol.addView(topSub);
+        topSub.setVisibility(View.GONE);
         LinearLayout header = panel();
         header.addView(titleCol);
         root.addView(header, card(0));
@@ -257,10 +257,10 @@ public final class MainActivity extends Activity {
         nexySearchInput = null;
         digipadTokenInput = null;
         content.removeAllViews();
-        topTitle.setText(BuildConfig.DIGIPAD_ONLY ? "DIGIPAD" : (PAGE_HOME.equals(page) ? "NEXIS" : title.toUpperCase(Locale.ROOT)));
+        topTitle.setText(BuildConfig.DIGIPAD_ONLY ? "DIGIPAD" : (PAGE_HOME.equals(page) ? "NEXUS" : title.toUpperCase(Locale.ROOT)));
         topTitle.setTextColor(accentText());
-        topSub.setText(BuildConfig.DIGIPAD_ONLY ? "Remote Client" : (PAGE_HOME.equals(page) ? "Mobile Nexi-Zentrale" : ""));
-        topSub.setVisibility((BuildConfig.DIGIPAD_ONLY || PAGE_HOME.equals(page)) ? View.VISIBLE : View.GONE);
+        topSub.setText("");
+        topSub.setVisibility(View.GONE);
 
         if (!BuildConfig.DIGIPAD_ONLY && !PAGE_HOME.equals(page)) {
             LinearLayout back = panel();
@@ -282,18 +282,19 @@ public final class MainActivity extends Activity {
     private void showHome() {
         clearPage(PAGE_HOME, "Zentrale", "Seitliche Navigation. Rechts die wichtigsten Arbeitsbereiche.");
         LinearLayout p = activePanel();
-
-        LinearLayout shell = new LinearLayout(this);
-        shell.setOrientation(LinearLayout.HORIZONTAL);
+        float screenDp = getResources().getDisplayMetrics().heightPixels / getResources().getDisplayMetrics().density;
+        int homePanelMinDp = Math.max(720, (int) screenDp - 170);
+        p.setMinimumHeight(dp(homePanelMinDp));
 
         boolean slideOpen = homeSlideOpen();
-        LinearLayout rail = homeRail(slideOpen);
-        shell.addView(rail, new LinearLayout.LayoutParams(slideOpen ? dp(96) : dp(30), LinearLayout.LayoutParams.MATCH_PARENT));
-
+        FrameLayout shell = new FrameLayout(this);
+        shell.setMinimumHeight(dp(homePanelMinDp - 48));
         LinearLayout deck = vertical();
-        LinearLayout.LayoutParams deckLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        deckLp.setMargins(dp(6), 0, 0, 0);
-        shell.addView(deck, deckLp);
+        deck.setPadding(dp(48), 0, 0, 0);
+        shell.addView(deck, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+        ));
 
         deck.addView(label("Heute", 20, true, Color.WHITE));
         deck.addView(label(shortSystemLine(), 11, false, sub()));
@@ -303,13 +304,25 @@ public final class MainActivity extends Activity {
         homeDeckTile(deck, "Chronik", "Zeitstrahl", "Was passiert ist, in Reihenfolge", v -> showTimelinePage());
         homeDeckTile(deck, "Explorer", "Dateien", "Nexus-Speicher durchsuchen", v -> showFilesPage());
 
-        deck.addView(gap(64));
-        deck.addView(section("SCHNELL"));
-        quickRow(deck, quickNav("Digi Dragon", v -> showDragonPage()), quickNav("DigiPad", v -> showDigiPadPage()));
-        quickRow(deck, quickNav("Verbindung", v -> testConnection()), quickNav("Widget", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }));
-        quickRow(deck, quickNav("Status", v -> showStatusOnly()), quickNav("Web", v -> showWebPage("/")));
-        quickRow(deck, quickNav("Neon gruen", v -> setTheme("neon")), quickNav("OLED schwarz", v -> setTheme("oled")));
-        quickRow(deck, quickNav("Orange", v -> setTheme("orange")), quickNav("Cyberblau", v -> setTheme("blue")));
+        LinearLayout quick = quickPanel();
+        FrameLayout.LayoutParams quickLp = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+        );
+        quickLp.gravity = Gravity.BOTTOM;
+        quickLp.setMargins(dp(54), 0, dp(18), dp(4));
+        shell.addView(quick, quickLp);
+
+        FrameLayout.LayoutParams handleLp = new FrameLayout.LayoutParams(dp(22), dp(74));
+        handleLp.gravity = Gravity.START | Gravity.TOP;
+        handleLp.setMargins(0, dp(8), 0, 0);
+        shell.addView(drawerHandleClean(slideOpen), handleLp);
+
+        if (slideOpen) {
+            FrameLayout.LayoutParams drawerLp = new FrameLayout.LayoutParams(dp(136), LinearLayout.LayoutParams.WRAP_CONTENT);
+            drawerLp.gravity = Gravity.START | Gravity.TOP;
+            shell.addView(homeDrawerClean(), drawerLp);
+        }
 
         p.addView(shell, card(8));
     }
@@ -324,83 +337,61 @@ public final class MainActivity extends Activity {
                 if (canvas == null || getWidth() <= 0 || getHeight() <= 0 || !menuPetVisible()) return;
 
                 if (shadowYoung == null) {
-                    shadowYoung = transparentLightPixels(transparentImageBackground(BitmapFactory.decodeResource(getResources(), R.drawable.dragon_schatten_jung)));
+                    shadowYoung = BitmapFactory.decodeResource(getResources(), R.drawable.dragon_schatten_jung_pet);
                 }
                 if (shadowYoung == null) return;
 
                 float w = getWidth();
                 float h = getHeight();
-                float cycle = 85000f;
+                float cycle = 115000f;
                 long now = System.currentTimeMillis();
                 float phase = (System.currentTimeMillis() % (long) cycle) / cycle;
                 float pageOffset = Math.abs(currentPage == null ? 0 : currentPage.hashCode() % 1000) / 1000f;
                 float t = (phase + pageOffset) % 1f;
 
-                float topLimit = PAGE_DRAGON.equals(currentPage) ? dp(272) : dp(188);
-                float size = Math.max(dp(36), Math.min(dp(56), w * 0.13f));
+                float topLimit = PAGE_DRAGON.equals(currentPage) ? dp(236) : dp(136);
+                float size = Math.max(dp(44), Math.min(dp(62), w * 0.115f));
                 float bw = shadowYoung.getWidth();
                 float bh = shadowYoung.getHeight();
                 float drawW = size;
                 float drawH = size * (bh / Math.max(1f, bw));
+                float highY = Math.max(dp(116), topLimit - dp(28));
                 float midY = topLimit + Math.max(dp(36), (h - topLimit - drawH) * 0.36f);
                 float lowY = h - drawH - dp(32);
-                boolean flip = false;
-                float x;
-                float y;
-                float tilt;
+                float centerX = w * 0.50f;
+                float centerY = highY + Math.max(dp(80), (lowY - highY) * 0.52f);
+                float radiusX = Math.max(dp(118), (w - drawW) * 0.44f);
+                float radiusY = Math.max(dp(116), Math.max(dp(120), (lowY - highY) * 0.43f));
+                float a = (float) (t * Math.PI * 2f);
+                float x = centerX
+                        + (float) Math.cos(a) * radiusX
+                        + (float) Math.sin(a * 2.6f + 0.4f) * radiusX * 0.12f
+                        - drawW / 2f;
+                float y = centerY
+                        + (float) Math.sin(a) * radiusY
+                        + (float) Math.sin(a * 1.7f + 1.1f) * radiusY * 0.10f
+                        - drawH / 2f;
+                float dx = (float) (-Math.sin(a) * radiusX + Math.cos(a * 2.6f + 0.4f) * radiusX * 0.31f);
+                float dy = (float) (Math.cos(a) * radiusY + Math.cos(a * 1.7f + 1.1f) * radiusY * 0.17f);
+                boolean flip = dx > 0f;
+                float tiltBase = Math.max(-18f, Math.min(18f, dy / Math.max(dp(24), Math.abs(dx)) * 14f));
+                float tilt = flip ? tiltBase : -tiltBase;
                 int motionMode;
-
-                if (t < 0.20f) {
-                    float p = smooth(t / 0.20f);
-                    x = lerp(dp(18), w * 0.44f, p);
-                    y = lowY - (float) Math.sin(p * Math.PI * 7f) * dp(5);
-                    tilt = (float) Math.sin(p * Math.PI * 5f) * 3f;
+                boolean lowAndLevel = y > lowY - dp(80) && Math.abs(dy) < Math.abs(dx) * 0.55f;
+                boolean climbing = Math.abs(dy) > Math.abs(dx) * 1.15f && x < dp(86);
+                if (lowAndLevel) {
                     motionMode = 0;
-                } else if (t < 0.32f) {
-                    float p = smooth((t - 0.20f) / 0.12f);
-                    x = lerp(w * 0.44f, w * 0.72f, p);
-                    y = lerp(lowY, midY, p) - (float) Math.sin(p * Math.PI) * dp(48);
-                    tilt = -12f + p * 28f;
-                    motionMode = 2;
-                } else if (t < 0.43f) {
-                    float p = (t - 0.32f) / 0.11f;
-                    x = w * 0.72f + (float) Math.sin(p * Math.PI * 2f) * dp(8);
-                    y = midY + (float) Math.sin(p * Math.PI * 2f) * dp(7);
-                    tilt = (float) Math.sin(p * Math.PI * 2f) * 5f;
-                    motionMode = 3;
-                } else if (t < 0.56f) {
-                    float p = smooth((t - 0.43f) / 0.13f);
-                    x = w - drawW - dp(8);
-                    y = lerp(midY, topLimit + dp(16), p);
-                    tilt = -18f;
+                    tilt *= 0.35f;
+                } else if (climbing) {
                     motionMode = 1;
-                } else if (t < 0.73f) {
-                    float p = smooth((t - 0.56f) / 0.17f);
-                    x = lerp(w - drawW - dp(20), dp(24), p);
-                    y = lerp(topLimit + dp(18), midY, p) - (float) Math.sin(p * Math.PI) * dp(54);
-                    tilt = -10f + p * 18f;
-                    flip = true;
-                    motionMode = 2;
-                } else if (t < 0.84f) {
-                    float p = (t - 0.73f) / 0.11f;
-                    x = dp(24) + (float) Math.sin(p * Math.PI * 2f) * dp(7);
-                    y = midY + (float) Math.sin(p * Math.PI * 2f) * dp(6);
-                    tilt = (float) Math.sin(p * Math.PI * 2f) * 4f;
-                    flip = true;
-                    motionMode = 3;
                 } else {
-                    float p = smooth((t - 0.84f) / 0.16f);
-                    x = dp(8);
-                    y = lerp(midY, lowY, p);
-                    tilt = 16f;
-                    flip = true;
-                    motionMode = 1;
+                    motionMode = 2;
                 }
 
                 x = Math.max(dp(4), Math.min(w - drawW - dp(4), x));
                 y = Math.max(topLimit, Math.min(h - drawH - dp(18), y));
 
-                paint.setAlpha(90);
+                paint.setAlpha(28);
                 paint.setColor(Color.rgb(112, 42, 180));
                 canvas.drawOval(x + dp(4), y + drawH - dp(8), x + drawW - dp(4), y + drawH + dp(4), paint);
 
@@ -411,14 +402,13 @@ public final class MainActivity extends Activity {
                 }
                 float gait = (now % (motionMode == 2 ? 820L : 1800L)) / (motionMode == 2 ? 820f : 1800f);
                 drawWandererMotion(canvas, x, y, drawW, drawH, gait, motionMode, true);
-                paint.setAlpha(235);
-                canvas.drawBitmap(shadowYoung, null, new RectF(x, y, x + drawW, y + drawH), paint);
+                drawAnimatedPetBitmap(canvas, shadowYoung, x, y, drawW, drawH, gait, motionMode);
                 drawWandererMotion(canvas, x, y, drawW, drawH, gait, motionMode, false);
 
-                paint.setAlpha(115);
+                paint.setAlpha(24);
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(dp(1));
-                paint.setColor(Color.rgb(180, 72, 255));
+                paint.setColor(Color.rgb(150, 54, 230));
                 canvas.drawOval(x + dp(2), y + dp(2), x + drawW - dp(2), y + drawH - dp(2), paint);
                 paint.setStyle(Paint.Style.FILL);
                 canvas.restore();
@@ -443,8 +433,8 @@ public final class MainActivity extends Activity {
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeCap(Paint.Cap.ROUND);
                 paint.setStrokeJoin(Paint.Join.ROUND);
-                paint.setStrokeWidth(Math.max(1f, w * 0.035f));
-                paint.setColor(behind ? Color.argb(95, 42, 8, 58) : Color.argb(190, 185, 66, 255));
+                paint.setStrokeWidth(Math.max(1f, w * 0.026f));
+                paint.setColor(behind ? Color.argb(58, 42, 8, 58) : Color.argb(120, 156, 54, 228));
 
                 float bodyX = x + w * 0.45f;
                 float bodyY = y + h * 0.55f;
@@ -475,12 +465,42 @@ public final class MainActivity extends Activity {
                 paint.setStrokeCap(Paint.Cap.BUTT);
                 paint.setStrokeJoin(Paint.Join.MITER);
             }
+
+            private void drawAnimatedPetBitmap(Canvas canvas, Bitmap bitmap, float x, float y, float w, float h, float gait, int mode) {
+                if (bitmap == null) return;
+                int slices = 9;
+                float walkWave = (float) Math.sin(gait * Math.PI * 2f);
+                float flyWave = (float) Math.sin(gait * Math.PI * 8f);
+                float breathe = (float) Math.sin(gait * Math.PI * 2f + 0.7f);
+                paint.setAlpha(244);
+                paint.setFilterBitmap(true);
+                paint.setDither(true);
+
+                for (int i = 0; i < slices; i++) {
+                    int sx0 = Math.round(bitmap.getWidth() * i / (float) slices);
+                    int sx1 = Math.round(bitmap.getWidth() * (i + 1) / (float) slices);
+                    float dx0 = x + w * i / slices;
+                    float dx1 = x + w * (i + 1) / slices;
+                    float center = (i + 0.5f) / slices;
+                    float spine = (float) Math.sin(gait * Math.PI * 2f + center * Math.PI * 1.7f);
+                    float flight = mode == 2 ? flyWave * h * (0.020f + center * 0.018f) : 0f;
+                    float walk = mode == 0 ? spine * h * 0.018f : mode == 1 ? spine * h * 0.012f : 0f;
+                    float climb = mode == 1 ? walkWave * w * 0.010f : 0f;
+                    float dx = climb + (mode == 2 ? spine * w * 0.014f : spine * w * 0.006f);
+                    float dy = flight + walk;
+                    float stretch = Math.abs(breathe) * h * 0.010f * (1f - Math.abs(center - 0.5f));
+                    Rect src = new Rect(sx0, 0, sx1, bitmap.getHeight());
+                    RectF dst = new RectF(dx0 + dx, y + dy - stretch, dx1 + dx, y + h + dy + stretch);
+                    canvas.drawBitmap(bitmap, src, dst, paint);
+                }
+                paint.setAlpha(255);
+            }
         };
     }
 
 
     private void showNexyPage() {
-        clearPage(PAGE_NEXY, "Nexy", "Gedaechtnis, Fokus, Recall und Briefing ueber die lokale Nexy Bridge.");
+        clearPage(PAGE_NEXY, "Nexi", "");
         LinearLayout p = activePanel();
 
         p.addView(section("BRIDGE"));
@@ -488,7 +508,7 @@ public final class MainActivity extends Activity {
         endpointInput.setText(nexyBridgeBase());
         p.addView(endpointInput, card(8));
 
-        TextView out = logBox("Nexy bereit.\nBridge: " + nexyBridgeBase() + "\nKeine automatische Abfrage beim App-Start. Diese Seite laedt nur auf Knopfdruck.");
+        TextView out = logBox("Nexi bereit.\nBridge: " + nexyBridgeBase());
         p.addView(out, card(8));
 
         row(p,
@@ -498,17 +518,17 @@ public final class MainActivity extends Activity {
 
         row(p,
                 nav("Tailscale 100", v -> useNexyBridge(out, "http://100.107.24.67:8765", "Tailscale")),
-                nav("Status", v -> loadNexyEndpoint(out, "Nexy Status", "/api/nexy/status"))
+                nav("Status", v -> loadNexyEndpoint(out, "Nexi Status", "/api/nexy/status"))
         );
 
         row(p,
-                nav("Bridge speichern", v -> { setNexyBridgeBase(endpointInput.getText().toString()); out.setText("Nexy Bridge gespeichert:\n" + nexyBridgeBase() + "\n\nDruecke Status oder Briefing."); }),
-                nav("Briefing", v -> loadNexyEndpoint(out, "Nexy Briefing", "/api/nexy/briefing"))
+                nav("Bridge speichern", v -> { setNexyBridgeBase(endpointInput.getText().toString()); out.setText("Nexi Bridge gespeichert:\n" + nexyBridgeBase()); }),
+                nav("Briefing", v -> loadNexyEndpoint(out, "Nexi Briefing", "/api/nexy/briefing"))
         );
 
         row(p,
-                nav("Fokus", v -> loadNexyEndpoint(out, "Nexy Fokus", "/api/nexy/focus?limit=5")),
-                nav("Timeline", v -> loadNexyEndpoint(out, "Nexy Timeline", "/api/nexy/timeline?limit=8"))
+                nav("Fokus", v -> loadNexyEndpoint(out, "Nexi Fokus", "/api/nexy/focus?limit=5")),
+                nav("Timeline", v -> loadNexyEndpoint(out, "Nexi Timeline", "/api/nexy/timeline?limit=8"))
         );
 
         p.addView(section("SUCHE"));
@@ -522,7 +542,7 @@ public final class MainActivity extends Activity {
 
         row(p,
                 nav("Safe-Start", v -> { nexySearchInput.setText("Safe-Start"); loadNexySearch(out); }),
-                nav("Memory", v -> loadNexyEndpoint(out, "Nexy Memory", "/api/nexy/status"))
+                nav("Memory", v -> loadNexyEndpoint(out, "Nexi Memory", "/api/nexy/status"))
         );
     }
 
@@ -541,7 +561,7 @@ public final class MainActivity extends Activity {
         setNexyBridgeBase(url);
         if (endpointInput != null) endpointInput.setText(nexyBridgeBase());
         if (out != null) {
-            out.setText("[OK] Nexy Bridge gesetzt\n"
+            out.setText("[OK] Nexi Bridge gesetzt\n"
                     + "Profil: " + label + "\n"
                     + "URL: " + nexyBridgeBase() + "\n\n"
                     + "Jetzt Status, Briefing, Fokus oder Suche druecken.");
@@ -677,9 +697,9 @@ public final class MainActivity extends Activity {
             return;
         }
         try {
-            loadNexyEndpoint(out, "Nexy Suche: " + q, "/api/nexy/search?q=" + enc(q) + "&limit=5");
+            loadNexyEndpoint(out, "Nexi Suche: " + q, "/api/nexy/search?q=" + enc(q) + "&limit=5");
         } catch (Exception ex) {
-            out.setText("Nexy Suche konnte nicht vorbereitet werden: " + ex.getClass().getSimpleName());
+            out.setText("Nexi Suche konnte nicht vorbereitet werden: " + ex.getClass().getSimpleName());
         }
     }
 
@@ -698,8 +718,8 @@ public final class MainActivity extends Activity {
                     failures.append(host(base)).append(": ").append(ex.getClass().getSimpleName()).append(" ").append(cut(ex.getMessage(), 70)).append('\n');
                 }
             }
-            String err = "Nexy nicht erreichbar.\n" + failures.toString().trim()
-                    + "\n\nPC pruefen: Nexy Bridge muss auf 0.0.0.0:8765 laufen.";
+            String err = "Nexi nicht erreichbar.\n" + failures.toString().trim()
+                    + "\n\nPC pruefen: Nexi Bridge muss auf 0.0.0.0:8765 laufen.";
             runOnUiThread(() -> { if (PAGE_NEXY.equals(currentPage)) out.setText(err); });
         }).start();
     }
@@ -922,7 +942,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showDragonPage() {
-        clearPage(PAGE_DRAGON, "Digi Dragon", "Lokaler Dragon Core. Kein automatischer Nexi- oder API-Start.");
+        clearPage(PAGE_DRAGON, "Digi Dragon", "");
         LinearLayout p = activePanel();
         String mode = dragonMode();
 
@@ -987,8 +1007,7 @@ public final class MainActivity extends Activity {
         }
 
         if ("system".equals(mode)) {
-            p.addView(section("SYSTEMGRENZE"));
-            p.addView(label("Digi Dragon bleibt lokal. Nexi wird nur bewusst gefragt, die Bridge ist optional.", 13, false, Color.rgb(226, 220, 212)));
+            p.addView(section("SYSTEM"));
             endpointInput = input("http://127.0.0.1:8777", true);
             endpointInput.setText(dragonBridgeBase());
             p.addView(endpointInput, card(8));
@@ -2635,8 +2654,7 @@ public final class MainActivity extends Activity {
                 + " | SPD " + dragonInt("speed", 5) + " | FOK " + dragonInt("focus", 5)
                 + " | INS " + dragonInt("instinct", 5)
                 + "\nNaechste Evolution: " + nextEvolutionText()
-                + (lastLine.trim().isEmpty() ? "" : "\nLetzte Aktion: " + lastLine)
-                + "\nPrinzip: lokal, getrennt, keine direkte Nexi-Kernmutation.";
+                + (lastLine.trim().isEmpty() ? "" : "\nLetzte Aktion: " + lastLine);
     }
 
     private int clamp(int value, int min, int max) { return Math.max(min, Math.min(max, value)); }
@@ -3331,38 +3349,52 @@ public final class MainActivity extends Activity {
         setContentView(buildUi());
     }
 
-    private LinearLayout homeRail(boolean open) {
-        LinearLayout rail = vertical();
-        rail.setPadding(open ? dp(5) : dp(3), dp(8), open ? dp(5) : dp(3), dp(8));
-        rail.setBackground(box(15, accentStart(), accentEnd()));
-        rail.addView(railButton(open ? "X" : ">>", open ? "Schliessen" : "", v -> { setHomeSlideOpen(!homeSlideOpen()); showHome(); }, open));
-        if (!open) {
-            rail.addView(railButton("D", "", v -> showDragonPage(), false));
-            rail.addView(railButton("P", "", v -> toggleMenuPet(), false));
-            return rail;
-        }
-        rail.addView(railButton("N", "Nexi", v -> showChefPage(), true));
-        rail.addView(railButton("IN", "Eingang", v -> showMessagesPage(), true));
-        rail.addView(railButton("Z", "Zeit", v -> showTimelinePage(), true));
-        rail.addView(railButton("D", "Dateien", v -> showFilesPage(), true));
-        rail.addView(railButton("DR", "Dragon", v -> showDragonPage(), true));
-        rail.addView(railButton("P", menuPetVisible() ? "Pet an" : "Pet aus", v -> toggleMenuPet(), true));
-        rail.addView(railButton("S", "System", v -> showStatusOnly(), true));
-        return rail;
+    private TextView drawerHandleClean(boolean open) {
+        TextView v = label(open ? "X" : ">", 16, true, accentText());
+        v.setGravity(Gravity.CENTER);
+        v.setPadding(0, 0, 0, dp(2));
+        v.setBackground(box(10, Color.rgb(7, 8, 8), accentDark()));
+        v.setOnClickListener(view -> { setHomeSlideOpen(!homeSlideOpen()); showHome(); });
+        return v;
     }
 
-    private TextView railButton(String code, String title, View.OnClickListener listener, boolean open) {
-        String text = title == null || title.isEmpty() ? code : (open ? code + "\n" + title : code);
-        TextView v = label(text, open ? 9 : 10, true, Color.WHITE);
-        v.setGravity(Gravity.CENTER);
-        v.setMinHeight(open ? dp(42) : dp(40));
-        v.setPadding(dp(1), dp(5), dp(1), dp(5));
+    private LinearLayout homeDrawerClean() {
+        LinearLayout drawer = vertical();
+        drawer.setPadding(dp(6), dp(6), dp(6), dp(6));
+        drawer.setBackground(box(14, Color.rgb(6, 7, 7), accentDark()));
+        drawer.setElevation(dp(10));
+        drawer.addView(drawerItemClean("Schliessen", v -> { setHomeSlideOpen(false); showHome(); }));
+        drawer.addView(drawerItemClean("Nexi", v -> showChefPage()));
+        drawer.addView(drawerItemClean("Eingang", v -> showMessagesPage()));
+        drawer.addView(drawerItemClean("Chronik", v -> showTimelinePage()));
+        drawer.addView(drawerItemClean("Explorer", v -> showFilesPage()));
+        drawer.addView(drawerItemClean("Dragon", v -> showDragonPage()));
+        drawer.addView(drawerItemClean(menuPetVisible() ? "Pet aus" : "Pet an", v -> toggleMenuPet()));
+        drawer.addView(drawerItemClean("DigiPad", v -> showDigiPadPage()));
+        drawer.addView(drawerItemClean("Web", v -> showWebPage("/")));
+        return drawer;
+    }
+
+    private TextView drawerItemClean(String title, View.OnClickListener listener) {
+        TextView v = label(title, 11, true, Color.WHITE);
+        v.setGravity(Gravity.CENTER_VERTICAL);
+        v.setMinHeight(dp(27));
+        v.setPadding(dp(7), 0, dp(6), 0);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(0, 0, 0, dp(5));
+        lp.setMargins(0, 0, 0, dp(4));
         v.setLayoutParams(lp);
-        v.setBackground(box(11, Color.argb(72, 255, 255, 255), Color.argb(128, 255, 255, 255)));
+        v.setBackground(box(8, Color.rgb(12, 13, 13), accentDark()));
         v.setOnClickListener(listener);
         return v;
+    }
+
+    private LinearLayout quickPanel() {
+        LinearLayout quick = vertical();
+        quick.addView(label("SCHNELL", 10, true, accentText()));
+        quickRow(quick, quickNav("Dragon", v -> showDragonPage()), quickNav("Verbindung", v -> testConnection()));
+        quickRow(quick, quickNav("Widget", v -> { NexusMessagesWidgetProvider.updateAll(this); showHome(); }), quickNav("Status", v -> showStatusOnly()));
+        quickRow(quick, quickNav("Neon", v -> setTheme("neon")), quickNav("OLED", v -> setTheme("oled")));
+        return quick;
     }
 
     private void homeDeckTile(LinearLayout parent, String title, String tag, String detail, View.OnClickListener listener) {
@@ -3389,7 +3421,16 @@ public final class MainActivity extends Activity {
         tile.addView(label(detail, 12, false, Color.rgb(218, 212, 204)));
         parent.addView(tile, card(8));
     }
-    private Button quickNav(String s, View.OnClickListener l) { Button b = nav(s, l); b.setTextSize(9); b.setMinHeight(dp(24)); b.setPadding(dp(3), 0, dp(3), 0); return b; }
+    private Button quickNav(String s, View.OnClickListener l) {
+        Button b = nav(s, l);
+        b.setTextSize(8);
+        b.setMinHeight(dp(22));
+        b.setMinimumHeight(0);
+        b.setPadding(dp(3), 0, dp(3), 0);
+        b.setTextColor(Color.rgb(230, 226, 218));
+        b.setBackground(box(10, Color.rgb(9, 10, 10), accentDark()));
+        return b;
+    }
     private void quickRow(LinearLayout parent, Button a, Button b) { LinearLayout r = new LinearLayout(this); r.setOrientation(LinearLayout.HORIZONTAL); LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f); lp.setMargins(0, dp(3), dp(3), 0); LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f); rp.setMargins(dp(3), dp(3), 0, 0); r.addView(a, lp); r.addView(b, rp); parent.addView(r); }
     private View gap(int height) { View v = new View(this); v.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(height))); return v; }
     private void row(LinearLayout parent, Button a) { LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(0, dp(4), 0, 0); parent.addView(a, lp); }
@@ -3460,6 +3501,43 @@ public final class MainActivity extends Activity {
             boolean paleWhiteBox = sum > 520 && max - min < 92;
             boolean faintEdge = sum > 455 && max - min < 76 && alpha < 245;
             if (paleWhiteBox || faintEdge) {
+                pixels[i] = Color.argb(0, r, g, b);
+            }
+        }
+
+        out.setPixels(pixels, 0, width, 0, 0, width, height);
+        return out;
+    }
+
+    private Bitmap transparentPetPixels(Bitmap source) {
+        if (source == null) return null;
+        Bitmap out = source.copy(Bitmap.Config.ARGB_8888, true);
+        int width = out.getWidth();
+        int height = out.getHeight();
+        int count = width * height;
+        int[] pixels = new int[count];
+        out.getPixels(pixels, 0, width, 0, 0, width, height);
+
+        for (int i = 0; i < count; i++) {
+            int c = pixels[i];
+            int alpha = Color.alpha(c);
+            if (alpha == 0) continue;
+            int r = Color.red(c);
+            int g = Color.green(c);
+            int b = Color.blue(c);
+            int max = Math.max(r, Math.max(g, b));
+            int min = Math.min(r, Math.min(g, b));
+            int sum = r + g + b;
+            boolean purplePixel = b > r + 14 && b > g + 10;
+            boolean dragonDark = max < 118;
+            boolean dragonInk = max < 154 && purplePixel;
+            boolean whiteBox = r > 160 && g > 150 && b > 160;
+            boolean paleLavender = r > 132 && g > 112 && b > 142 && max - min < 128;
+            boolean lowContrastBright = sum > 420 && max - min < 150;
+            boolean nearPaper = sum > 350 && max - min < 85;
+            if (!dragonDark && !dragonInk) {
+                pixels[i] = Color.argb(0, r, g, b);
+            } else if (whiteBox || paleLavender || lowContrastBright || nearPaper) {
                 pixels[i] = Color.argb(0, r, g, b);
             }
         }
