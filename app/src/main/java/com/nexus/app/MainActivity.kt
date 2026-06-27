@@ -1,15 +1,11 @@
 package com.nexus.app
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.nexus.app.ui.navigation.NexusGlobalNavigation
-
+import androidx.compose.material3.Text
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            NexusGlobalNavigation()
-        }
+        setContent { Text("Nexus Fundament steht.") }
     }
 }

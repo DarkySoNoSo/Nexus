@@ -10,10 +10,11 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "v40.45.9"
+        versionName = "1.0"
     }
     buildFeatures { compose = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.4" }
+    compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
 }
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
