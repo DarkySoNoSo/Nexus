@@ -1,0 +1,25 @@
+name: Build Nexus APK
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+        
+      - name: Java 17 aufsetzen
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: APK mit systemweitem Gradle kompilieren (ignoriert fehlenden Wrapper)
+        run: gradle assembleDebug
+        
+      - name: Fertige APK als Download bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexus-Cockpit-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
