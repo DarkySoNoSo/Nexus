@@ -1,14 +1,20 @@
 package com.nexus.app
 import android.os.Bundle
-import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val tv = TextView(this)
-        tv.text = "NEXUS SYSTEM ONLINE"
-        tv.textSize = 26f
-        setContentView(tv)
+        setContent {
+            MaterialTheme {
+                Surface {
+                    Text(text = "NEXUS UI ACTIVE")
+                }
+            }
+        }
     }
 }
